@@ -19,6 +19,9 @@ final class Mensagens {
         if (t instanceof AcessoNegadoException e) {
             return e.getMessage();
         }
+        if (t instanceof br.com.instadino.licenciamento.ErroDaApi || t instanceof br.com.instadino.licenciamento.FalhaDeRede) {
+            return t.getMessage();
+        }
         if (t instanceof BancoException) {
             LOG.log(System.Logger.Level.WARNING, "Falha de banco ({0}).", t.getClass().getSimpleName());
             return "Não foi possível acessar os dados locais. Reinicie o aplicativo e tente novamente.";

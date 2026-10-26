@@ -8,6 +8,7 @@ public enum Destino {
     RELACIONAMENTOS("Relacionamentos"),
     HISTORICO("Histórico"),
     RELATORIOS("Relatórios"),
+    CONTA("Conta"),
     PREMIUM("Premium"),
     SEGURANCA("Segurança e privacidade"),
     CONFIGURACOES("Configurações");

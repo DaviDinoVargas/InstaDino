@@ -50,7 +50,7 @@ class InterfaceTest {
         local = ContextoLocal.abrir(pasta.resolve("dados"), new ProtetorSomenteDesenvolvimento(), licenca::get);
         local.preferencias().definir("reduzir_animacoes", "true"); // capturas nítidas e teste da preferência de acessibilidade
         FxTeste.naInterface(() -> {
-            janela = new JanelaPrincipal(local, urlsAbertas::add);
+            janela = new JanelaPrincipal(local, gerenciadorSemServico(), urlsAbertas::add);
             palco = new Stage();
             palco.setScene(janela.criarCena());
             palco.show();
@@ -65,6 +65,13 @@ class InterfaceTest {
         if (local != null) {
             local.close();
         }
+    }
+
+    private br.com.instadino.licenciamento.GerenciadorDeLicenca gerenciadorSemServico() {
+        return new br.com.instadino.licenciamento.GerenciadorDeLicenca(null,
+                new br.com.instadino.licenciamento.ArmazemDeConta(pasta.resolve("conta.cache"), new ProtetorSomenteDesenvolvimento()),
+                new br.com.instadino.licenciamento.VerificadorDeLicenca(br.com.instadino.licenciamento.ChavesConfiaveis.vazio()),
+                java.time.Clock.systemUTC(), "dispositivo-de-teste-ui", "PC");
     }
 
     private void importarPeloServico(ConstrutorDeExportacao c) {
@@ -197,7 +204,7 @@ class InterfaceTest {
         importarPeloServico(ConstrutorDeExportacao.exemplo());
         FxTeste.naInterface(() -> br.com.instadino.desktop.telas.Telas.abrirRelacionamentos(janela.contexto(), VisaoDeRelacionamento.NAO_SEGUEM_DE_VOLTA, ""));
         FxTeste.esperar(() -> tabela().getItems().size() == 2, "lista de não recíprocos");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "não prova que"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "não prova que"), "aviso de limitação dos dados");
         FxTeste.capturar(raiz(), "08-nao-seguem-de-volta");
     }
 
@@ -206,7 +213,8 @@ class InterfaceTest {
         abrir();
         importarPeloServico(ConstrutorDeExportacao.exemplo());
         ir(Destino.RELACIONAMENTOS);
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Filtros avançados (Premium)"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Filtros avançados (Premium)"), "filtros avançados no Free");
+        FxTeste.esperar(() -> FxTeste.botao(raiz(), "Aplicar filtros") != null, "botão de aplicar filtros (Free)");
         assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Aplicar filtros").getParent().isDisabled())).isTrue();
 
         licenca.set(new EstadoDaLicenca(Plano.PREMIUM, SituacaoDaLicenca.ATIVA));
@@ -214,6 +222,7 @@ class InterfaceTest {
         // reabre a janela com o plano Premium para reconstruir a tela de relacionamentos
         abrir();
         ir(Destino.RELACIONAMENTOS);
+        FxTeste.esperar(() -> FxTeste.botao(raiz(), "Aplicar filtros") != null, "botão de aplicar filtros (Premium)");
         assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Aplicar filtros").getParent().isDisabled())).isFalse();
         assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "PREMIUM"))).isTrue();
         FxTeste.capturar(raiz(), "09-relacionamentos-premium");
@@ -307,8 +316,8 @@ class InterfaceTest {
     void navegacaoPorTecladoEstaDisponivel() {
         abrir();
         var botoes = FxTeste.naInterface(() -> FxTeste.todos(raiz()).stream().filter(n -> n.getStyleClass().contains("botao-nav")).toList());
-        assertThat(botoes).hasSize(8);
+        assertThat(botoes).hasSize(9);
         assertThat(botoes).allMatch(Node::isFocusTraversable);
-        assertThat(FxTeste.naInterface(() -> palco.getScene().getAccelerators().size())).isGreaterThanOrEqualTo(9);
+        assertThat(FxTeste.naInterface(() -> palco.getScene().getAccelerators().size())).isGreaterThanOrEqualTo(10);
     }
 }

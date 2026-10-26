@@ -72,9 +72,15 @@ final class FxTeste {
 
     static void esperar(BooleanSupplier condicao, String descricao) {
         long limite = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
+        Throwable ultimaFalha = null;
         while (System.nanoTime() < limite) {
-            if (naInterface(condicao::getAsBoolean)) {
-                return;
+            try {
+                if (naInterface(condicao::getAsBoolean)) {
+                    return;
+                }
+            } catch (AssertionError aindaNaoPronta) {
+                // a tela pode estar sendo reconstruída; a condição é reavaliada até o limite
+                ultimaFalha = aindaNaoPronta;
             }
             try {
                 Thread.sleep(50);
@@ -83,7 +89,7 @@ final class FxTeste {
                 break;
             }
         }
-        throw new AssertionError("Tempo esgotado esperando: " + descricao);
+        throw new AssertionError("Tempo esgotado esperando: " + descricao, ultimaFalha);
     }
 
     static List<Node> todos(Node raiz) {
@@ -102,7 +108,7 @@ final class FxTeste {
     static List<String> textos(Node raiz) {
         List<String> textos = new ArrayList<>();
         for (Node n : todos(raiz)) {
-            if (n instanceof Labeled l && l.getText() != null && !l.getText().isBlank() && n.isVisible()) {
+            if (n instanceof Labeled l && l.getText() != null && !l.getText().isBlank() && visivelDeFato(n)) {
                 textos.add(l.getText());
             }
         }
@@ -113,8 +119,18 @@ final class FxTeste {
         return textos(raiz).stream().anyMatch(t -> t.contains(trecho));
     }
 
+    /** Visível de verdade: o nó e todos os seus ancestrais estão visíveis (abas não selecionadas ficam no grafo, invisíveis). */
+    static boolean visivelDeFato(Node no) {
+        for (Node n = no; n != null; n = n.getParent()) {
+            if (!n.isVisible()) {
+                return false;
+            }
+        }
+        return no.getScene() != null;
+    }
+
     static Button botao(Node raiz, String texto) {
-        return todos(raiz).stream().filter(n -> n instanceof Button b && texto.equals(b.getText()) && b.isVisible())
+        return todos(raiz).stream().filter(n -> n instanceof Button b && texto.equals(b.getText()) && visivelDeFato(b))
                 .map(n -> (Button) n).findFirst().orElse(null);
     }
 
