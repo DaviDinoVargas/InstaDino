@@ -1,0 +1,43 @@
+name: Integração contínua
+
+on:
+  push:
+    branches: [main, desenvolvimento, 'funcionalidade/**', 'seguranca/**', 'correcao/**', 'documentacao/**']
+  pull_request:
+    branches: [main, desenvolvimento]
+
+permissions:
+  contents: read
+
+jobs:
+  higiene-do-repositorio:
+    name: Verificação de segredos e arquivos proibidos
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Autoteste do verificador
+        run: scripts/testar-verificador.sh
+      - name: Verificar segredos e histórico
+        run: scripts/verificar-segredos.sh --historico
+
+  compilar-e-testar:
+    name: Compilar e testar (Java 21)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build e testes
+        run: mvn -B -ntp verify
+      - name: Publicar relatórios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-de-teste
+          path: '**/target/surefire-reports/*.xml'
+          if-no-files-found: ignore
