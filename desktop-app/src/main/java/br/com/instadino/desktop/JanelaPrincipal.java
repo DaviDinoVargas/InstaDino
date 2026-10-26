@@ -48,7 +48,7 @@ public final class JanelaPrincipal {
     private final ToggleGroup grupo = new ToggleGroup();
     private final Label seloDoPlano = new Label();
     private final Button botaoDaConta = new Button("Entrar");
-    private final Label perfil = new Label();
+    private final javafx.scene.control.MenuButton perfil = new javafx.scene.control.MenuButton();
     private final TextField buscaGlobal = new TextField();
     private final ContextoDaInterface ui;
     private Scene cena;
@@ -156,7 +156,8 @@ public final class JanelaPrincipal {
     }
 
     private HBox barraSuperior() {
-        perfil.getStyleClass().add("texto-suave");
+        perfil.getStyleClass().add("botao-perfil");
+        perfil.setAccessibleText("Perfil local ativo. Abre o menu para trocar, criar, renomear ou excluir perfis");
         buscaGlobal.setPromptText("Buscar contas…  (Ctrl+F)");
         buscaGlobal.getStyleClass().add("campo-global");
         buscaGlobal.setAccessibleText("Busca global de contas");
@@ -204,12 +205,115 @@ public final class JanelaPrincipal {
         seloDoPlano.getStyleClass().removeAll("selo-free", "selo-premium");
         seloDoPlano.getStyleClass().add(plano == Plano.PREMIUM ? "selo-premium" : "selo-free");
         seloDoPlano.setAccessibleText("Plano " + (plano == Plano.PREMIUM ? "Premium" : "Free"));
-        long id = local.sessao().perfilAtivo();
-        perfil.setText("Perfil: " + local.perfis().obter(id).map(p -> p.nome()).orElse("—"));
+        reconstruirMenuDePerfis();
         botaoDaConta.setText(licenca.autenticado() ? licenca.conta().map(c -> c.nome()).orElse("Minha conta") : "Entrar");
         botaoDaConta.setAccessibleText(licenca.autenticado() ? "Abrir minha conta" : "Entrar na conta comercial (opcional)");
         if (cena != null) {
             aplicarTema();
+        }
+    }
+
+    // ---- perfis locais ----
+
+    private void reconstruirMenuDePerfis() {
+        var servico = local.servicoDePerfis();
+        var ativo = servico.ativo();
+        perfil.setText("Perfil: " + ativo.nome());
+        perfil.getItems().clear();
+        javafx.scene.control.ToggleGroup selecao = new javafx.scene.control.ToggleGroup();
+        for (var p : servico.listar()) {
+            javafx.scene.control.RadioMenuItem item = new javafx.scene.control.RadioMenuItem(p.nome());
+            item.setToggleGroup(selecao);
+            item.setSelected(p.id() == ativo.id());
+            item.setOnAction(e -> trocarDePerfil(p.id()));
+            perfil.getItems().add(item);
+        }
+        perfil.getItems().add(new javafx.scene.control.SeparatorMenuItem());
+        javafx.scene.control.MenuItem novo = new javafx.scene.control.MenuItem("Novo perfil…");
+        novo.setOnAction(e -> novoPerfil());
+        javafx.scene.control.MenuItem renomear = new javafx.scene.control.MenuItem("Renomear este perfil…");
+        renomear.setOnAction(e -> renomearPerfil());
+        javafx.scene.control.MenuItem excluir = new javafx.scene.control.MenuItem("Excluir este perfil…");
+        excluir.setDisable(servico.listar().size() <= 1);
+        excluir.setOnAction(e -> excluirPerfil());
+        perfil.getItems().addAll(novo, renomear, excluir);
+    }
+
+    private void trocarDePerfil(long id) {
+        try {
+            local.servicoDePerfis().selecionar(id);
+        } catch (RuntimeException e) {
+            ui.notificador().erro("Não foi possível trocar de perfil.");
+        }
+        recarregarTelaAtual();
+    }
+
+    private void novoPerfil() {
+        if (!local.politica().permite(br.com.instadino.nucleo.acesso.Funcionalidade.MULTIPLOS_PERFIS) && local.servicoDePerfis().listar().size() >= 1) {
+            ui.notificador().info("Mais de um perfil local faz parte do plano Premium.");
+            ui.roteador().ir(Destino.PREMIUM);
+            return;
+        }
+        String nome = pedirTexto("Novo perfil", "Dê um nome ao perfil (por exemplo, a conta que será analisada):", "");
+        if (nome == null) {
+            return;
+        }
+        try {
+            local.servicoDePerfis().criar(nome);
+            ui.notificador().sucesso("Perfil criado e selecionado.");
+        } catch (RuntimeException e) {
+            ui.notificador().erro(e.getMessage() == null ? "Não foi possível criar o perfil." : e.getMessage());
+        }
+        recarregarTelaAtual();
+    }
+
+    private void renomearPerfil() {
+        var ativo = local.servicoDePerfis().ativo();
+        String nome = pedirTexto("Renomear perfil", "Novo nome do perfil:", ativo.nome());
+        if (nome == null) {
+            return;
+        }
+        try {
+            local.servicoDePerfis().renomear(ativo.id(), nome);
+        } catch (RuntimeException e) {
+            ui.notificador().erro(e.getMessage() == null ? "Não foi possível renomear o perfil." : e.getMessage());
+        }
+        recarregarTelaAtual();
+    }
+
+    private void excluirPerfil() {
+        var ativo = local.servicoDePerfis().ativo();
+        javafx.scene.control.Alert confirmacao = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION,
+                "Excluir o perfil \"" + ativo.nome() + "\" apaga todas as importações, favoritos, etiquetas e notas dele. A ação não pode ser desfeita.",
+                javafx.scene.control.ButtonType.OK, javafx.scene.control.ButtonType.CANCEL);
+        confirmacao.setHeaderText("Excluir este perfil?");
+        confirmacao.initOwner(janela());
+        if (confirmacao.showAndWait().orElse(javafx.scene.control.ButtonType.CANCEL) != javafx.scene.control.ButtonType.OK) {
+            return;
+        }
+        try {
+            local.servicoDePerfis().excluir(ativo.id());
+            ui.notificador().sucesso("Perfil excluído.");
+        } catch (RuntimeException e) {
+            ui.notificador().erro(e.getMessage() == null ? "Não foi possível excluir o perfil." : e.getMessage());
+        }
+        recarregarTelaAtual();
+    }
+
+    private String pedirTexto(String titulo, String cabecalho, String inicial) {
+        javafx.scene.control.TextInputDialog dialogo = new javafx.scene.control.TextInputDialog(inicial);
+        dialogo.setTitle(titulo);
+        dialogo.setHeaderText(cabecalho);
+        dialogo.initOwner(janela());
+        return dialogo.showAndWait().map(String::strip).filter(t -> !t.isEmpty()).orElse(null);
+    }
+
+    /** Depois de trocar o perfil ativo, todas as telas precisam reler os dados do novo perfil. */
+    private void recarregarTelaAtual() {
+        ui.estadoMudou();
+        var destino = ui.roteador().atual();
+        if (destino != null) {
+            ui.roteador().ir(destino);
         }
     }
 

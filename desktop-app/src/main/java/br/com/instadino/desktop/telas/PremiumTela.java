@@ -46,14 +46,14 @@ final class PremiumTela extends TelaBase {
         RECURSOS.put(Funcionalidade.CSV_PERSONALIZADO, new Recurso("CSV personalizado", true));
         RECURSOS.put(Funcionalidade.GRAFICOS_HISTORICOS, new Recurso("Gráficos históricos", false));
         RECURSOS.put(Funcionalidade.RELATORIO_PDF, new Recurso("Relatórios em PDF", false));
-        RECURSOS.put(Funcionalidade.FAVORITOS, new Recurso("Favoritos", false));
-        RECURSOS.put(Funcionalidade.ETIQUETAS, new Recurso("Etiquetas", false));
-        RECURSOS.put(Funcionalidade.NOTAS_PRIVADAS, new Recurso("Notas privadas", false));
-        RECURSOS.put(Funcionalidade.MULTIPLOS_PERFIS, new Recurso("Múltiplos perfis locais", false));
+        RECURSOS.put(Funcionalidade.FAVORITOS, new Recurso("Favoritos", true));
+        RECURSOS.put(Funcionalidade.ETIQUETAS, new Recurso("Etiquetas", true));
+        RECURSOS.put(Funcionalidade.NOTAS_PRIVADAS, new Recurso("Notas privadas", true));
+        RECURSOS.put(Funcionalidade.MULTIPLOS_PERFIS, new Recurso("Múltiplos perfis locais", true));
         RECURSOS.put(Funcionalidade.BIBLIOTECA_DE_CONTEUDO, new Recurso("Biblioteca de conteúdo", false));
         RECURSOS.put(Funcionalidade.ANALISE_DE_ATIVIDADE, new Recurso("Análise de atividade", false));
         RECURSOS.put(Funcionalidade.ARQUIVO_DE_MENSAGENS, new Recurso("Arquivo de mensagens (opcional, com consentimento)", false));
-        RECURSOS.put(Funcionalidade.BACKUP_PROTEGIDO, new Recurso("Backup local protegido", false));
+        RECURSOS.put(Funcionalidade.BACKUP_PROTEGIDO, new Recurso("Backup local protegido", true));
     }
 
     private final VBox area = new VBox(16);
