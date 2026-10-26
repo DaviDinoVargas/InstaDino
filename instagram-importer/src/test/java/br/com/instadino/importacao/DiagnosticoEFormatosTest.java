@@ -126,4 +126,42 @@ class DiagnosticoEFormatosTest {
         assertThat(d.formas()).containsKey("(outras formas)");
         assertThat(d.validos()).isEqualTo(30);
     }
+
+    @Test
+    void solicitacaoPendenteComoRegistroUnicoNaRaizEhLida() {
+        var c = new ConstrutorDeExportacao().seguidores("ana").seguindo("ana");
+        c.arquivo("connections/followers_and_following/pending_follow_requests.json", """
+                {"timestamp": 1704067200, "media": [], "label_values": [
+                   {"label": "URL", "value": "https://www.instagram.com/carla_x"},
+                   {"label": "Nome", "value": ""},
+                   {"label": "Nome de usuário", "value": ""}]}""");
+        ResultadoDaImportacao r = importar(c);
+        assertThat(nomes(r, TipoDeRelacionamento.SOLICITACAO_PENDENTE)).containsExactly("carla_x");
+        assertThat(r.registrosInvalidos()).isZero();
+    }
+
+    @Test
+    void registroUnicoNaRaizSemUsuarioEhDescartadoSemInventar() {
+        var c = new ConstrutorDeExportacao().seguindo("ana");
+        c.arquivo("connections/followers_and_following/pending_follow_requests.json",
+                "{\"timestamp\": 1, \"label_values\": [{\"label\": \"Nome\", \"value\": \"Maria Silva\"}]}");
+        ResultadoDaImportacao r = importar(c);
+        assertThat(nomes(r, TipoDeRelacionamento.SOLICITACAO_PENDENTE)).isEmpty();
+        assertThat(r.registrosInvalidos()).isEqualTo(1);
+    }
+
+    @Test
+    void diagnosticoInformaOPeriodoDasDatasEOInventarioNaoListaMensagens() {
+        var c = new ConstrutorDeExportacao().seguindo("ana");
+        c.arquivo("conta/connections/followers_and_following/followers_1.json", """
+                [{"title":"","string_list_data":[{"href":"https://www.instagram.com/a1","value":"a1","timestamp":1672531200}]},
+                 {"title":"","string_list_data":[{"href":"https://www.instagram.com/a2","value":"a2","timestamp":1704067200}]}]""");
+        c.arquivo("conta/your_instagram_activity/messages/inbox/fulano_123/message_1.json", "{\"messages\": []}");
+        ResultadoDaImportacao r = importar(c);
+        var d = r.diagnosticos().stream().filter(x -> x.categoria() == CategoriaDeDados.SEGUIDORES).findFirst().orElseThrow();
+        assertThat(d.comoTexto()).contains("datas dos registros: 2023-01-01 a 2024-01-01");
+        String inventario = DiagnosticoDeArquivo.inventarioComoTexto(r.inventario());
+        assertThat(inventario).contains("connections/followers_and_following/followers_1.json").contains("SEGUIDORES: 1 arquivo");
+        assertThat(inventario).doesNotContain("fulano").doesNotContain("message_1");
+    }
 }

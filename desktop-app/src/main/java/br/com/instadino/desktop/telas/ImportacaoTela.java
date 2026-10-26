@@ -247,7 +247,8 @@ final class ImportacaoTela extends TelaBase {
                 .collect(java.util.stream.Collectors.joining("\n"));
         Button copiar = Ui.secundario("Copiar diagnóstico", () -> {
             javafx.scene.input.ClipboardContent c = new javafx.scene.input.ClipboardContent();
-            c.putString("InstaDino — diagnóstico da importação (leitor " + r.versaoDoParser() + ")\n\n" + texto);
+            c.putString("InstaDino — diagnóstico da importação (leitor " + r.versaoDoParser() + ")\n\n"
+                    + br.com.instadino.importacao.DiagnosticoDeArquivo.inventarioComoTexto(r.inventario()) + "\n" + texto);
             javafx.scene.input.Clipboard.getSystemClipboard().setContent(c);
             ui.notificador().sucesso("Diagnóstico copiado. Ele não contém nomes de usuário.");
         });

@@ -32,7 +32,7 @@ import java.util.zip.ZipFile;
  */
 public final class ImportadorDeExportacao {
 
-    public static final String VERSAO_DO_PARSER = "1.1.0";
+    public static final String VERSAO_DO_PARSER = "1.2.0";
 
     private static final Map<CategoriaDeDados, TipoDeRelacionamento> TIPOS = new EnumMap<>(CategoriaDeDados.class);
 
@@ -108,7 +108,7 @@ public final class ImportadorDeExportacao {
                     totalLido += limitada.bytesLidos();
                     diagnosticos.add(new DiagnosticoDeArquivo(DiagnosticoDeArquivo.caminhoSemRaiz(alvo.caminho()), alvo.categoria(),
                             limitada.bytesLidos(), leitura.registrosLidos(), leitura.usuarios().size(), leitura.duplicados(),
-                            leitura.invalidosPorMotivo(), leitura.formas(), null));
+                            leitura.invalidosPorMotivo(), leitura.formas(), leitura.primeiroInstante(), leitura.ultimoInstante(), null));
                     Map<NomeDeUsuario, Long> destino = acumulado.computeIfAbsent(tipo, k -> new LinkedHashMap<>());
                     duplicados += leitura.duplicados();
                     for (Map.Entry<NomeDeUsuario, Long> u : leitura.usuarios().entrySet()) {
@@ -172,6 +172,6 @@ public final class ImportadorDeExportacao {
 
     private static DiagnosticoDeArquivo erroDeArquivo(EntradaInventariada alvo, String motivo) {
         return new DiagnosticoDeArquivo(DiagnosticoDeArquivo.caminhoSemRaiz(alvo.caminho()), alvo.categoria(), alvo.tamanhoDeclarado(),
-                0, 0, 0, Map.of(), Map.of(), motivo);
+                0, 0, 0, Map.of(), Map.of(), null, null, motivo);
     }
 }
