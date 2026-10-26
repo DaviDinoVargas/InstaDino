@@ -7,7 +7,7 @@ Data: 2026-10-26 · Escopo: importador, persistência local cifrada, backend com
 ## 1. Método
 
 1. Revisão do código contra `SECURITY_REQUIREMENTS.md`, controle a controle.
-2. Suíte automatizada (JUnit 5): **468 testes executados, 0 falhas, 1 ignorado** (DPAPI, só roda em Windows). Por módulo: núcleo 66 · contratos de pagamento 34 · persistência 49 (+1 ignorado) · importador 43 · análise 26 · casos de uso 18 · cliente de licenciamento 43+2 · backend 102+2 · desktop 40.
+2. Suíte automatizada (JUnit 5): **425 testes executados (`mvn verify`, com `xvfb-run` para a interface), 0 falhas, 0 erros, 1 ignorado** (DPAPI, só roda em Windows). Por módulo: núcleo 66 · contratos de pagamento 34 · persistência 49 (1 deles é o ignorado) · cliente de licenciamento 45 · backend 104 · importador 43 · análise 26 · casos de uso 18 · desktop 40.
 3. **Testes de mutação manuais** em controles críticos: o controle é quebrado de propósito e o teste correspondente precisa falhar. Um mutante sobreviveu e revelou lacuna de teste (V-07); a correção do webhook (V-02) e o teste de arquitetura (V-10) também foram validados assim.
 4. Execução ponta a ponta com o JAR empacotado: backend real em porta aleatória e cliente real; as três contas de demonstração se comportam como projetado (master e premium recebem licença assinada; free não).
 5. Varredura de segredos no índice **e** no histórico (`scripts/verificar-segredos.sh --historico`): nada encontrado.
@@ -32,7 +32,7 @@ Nenhum achado crítico ou alto está aberto exceto V-11 (limitação de ambiente
 
 ## 3. Situação dos requisitos
 
-- Atendidos com teste que passa: IMP-01…IMP-09, DB-01…DB-08, AUT-01…AUT-08, AUZ-01, AUZ-02, AUZ-04, LIC-01…LIC-06, PAG-01…PAG-08 (em sandbox), PRI-01, PRI-04.
+- Atendidos com teste que passa: IMP-01…IMP-07 e IMP-09, DB-01, DB-02, DB-04…DB-08, AUT-01…AUT-06 e AUT-08, AUZ-01, AUZ-02, AUZ-04, LIC-01…LIC-06, PAG-01…PAG-08 (em sandbox), PRI-01, PRI-04. IMP-08 (temporários removidos) é atendido por construção — o importador não extrai nada para disco —, sem teste dedicado.
 - **Parciais**: DB-03 (DPAPI: adaptador testado por unidade; chamada real exige Windows), DB-09 e AUT-07 (logs verificados nos fluxos testados, não em todos os caminhos de erro), PRI-02 (consentimento aplicado; o módulo de mensagens ainda não existe), AUZ-03 (catálogo de funcionalidades aplicado nas telas existentes).
 - **Não atendidos ainda**: SUP-02/SUP-03 (auditoria de dependências, SBOM), SUP-04 (instalador assinado), PAG-09 só parcial (sandbox sem chave de produção, mas sem adaptador real a revisar).
 - AUT-09: não há senha no repositório; a varredura do índice e do histórico não encontrou nenhuma.
