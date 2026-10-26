@@ -6,6 +6,7 @@ import br.com.instadino.desktop.componentes.Ui;
 import br.com.instadino.desktop.navegacao.Destino;
 import br.com.instadino.desktop.navegacao.Roteador;
 import br.com.instadino.desktop.telas.Telas;
+import br.com.instadino.licenciamento.GerenciadorDeLicenca;
 import br.com.instadino.nucleo.acesso.Plano;
 import br.com.instadino.servicos.ContextoLocal;
 import br.com.instadino.servicos.VisaoDeRelacionamento;
@@ -15,6 +16,7 @@ import java.util.function.Consumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
@@ -38,20 +40,23 @@ public final class JanelaPrincipal {
     private static final String CSS_CLARO = "/br/com/instadino/desktop/instadino-claro.css";
 
     private final ContextoLocal local;
+    private final GerenciadorDeLicenca licenca;
     private final BorderPane raiz = new BorderPane();
     private final StackPane area = new StackPane();
     private final Notificador notificador = new Notificador();
     private final Map<Destino, ToggleButton> botoes = new EnumMap<>(Destino.class);
     private final ToggleGroup grupo = new ToggleGroup();
     private final Label seloDoPlano = new Label();
+    private final Button botaoDaConta = new Button("Entrar");
     private final Label perfil = new Label();
     private final TextField buscaGlobal = new TextField();
     private final ContextoDaInterface ui;
     private Scene cena;
 
-    public JanelaPrincipal(ContextoLocal local, Consumer<String> navegador) {
+    public JanelaPrincipal(ContextoLocal local, GerenciadorDeLicenca licenca, Consumer<String> navegador) {
         this.local = local;
-        this.ui = new ContextoDaInterface(local, notificador, () -> cena == null ? null : cena.getWindow(), navegador);
+        this.licenca = licenca;
+        this.ui = new ContextoDaInterface(local, licenca, notificador, () -> cena == null ? null : cena.getWindow(), navegador);
         Roteador roteador = new Roteador(area, d -> Telas.criar(d, ui), ui::reduzirAnimacoes);
         ui.definirRoteador(roteador);
         ui.aoMudarEstado(this::atualizarCabecalho);
@@ -111,6 +116,7 @@ public final class JanelaPrincipal {
                 item(Destino.HISTORICO, "historico", "Histórico"),
                 item(Destino.RELATORIOS, "relatorio", "Relatórios"),
                 secao("CONTA"),
+                item(Destino.CONTA, "usuario", "Conta"),
                 item(Destino.PREMIUM, "estrela", "Premium"),
                 secao("SISTEMA"),
                 item(Destino.SEGURANCA, "escudo", "Segurança e privacidade"),
@@ -162,7 +168,9 @@ public final class JanelaPrincipal {
         seloDoPlano.setAccessibleRole(javafx.scene.AccessibleRole.TEXT);
         Region espaco = new Region();
         HBox.setHgrow(espaco, Priority.ALWAYS);
-        HBox barra = new HBox(14, perfil, espaco, buscaGlobal, seloDoPlano);
+        botaoDaConta.getStyleClass().add("botao-link");
+        botaoDaConta.setOnAction(e -> ui.roteador().ir(Destino.CONTA));
+        HBox barra = new HBox(14, perfil, espaco, buscaGlobal, seloDoPlano, botaoDaConta);
         barra.setAlignment(Pos.CENTER_LEFT);
         barra.setPadding(new Insets(12, 24, 12, 24));
         barra.getStyleClass().add("barra-superior");
@@ -178,9 +186,9 @@ public final class JanelaPrincipal {
 
     private void registrarAtalhos() {
         Destino[] ordem = {Destino.PAINEL, Destino.IMPORTACAO, Destino.RELACIONAMENTOS, Destino.HISTORICO, Destino.RELATORIOS,
-            Destino.PREMIUM, Destino.SEGURANCA, Destino.CONFIGURACOES};
+            Destino.CONTA, Destino.PREMIUM, Destino.SEGURANCA, Destino.CONFIGURACOES};
         KeyCode[] teclas = {KeyCode.DIGIT1, KeyCode.DIGIT2, KeyCode.DIGIT3, KeyCode.DIGIT4, KeyCode.DIGIT5, KeyCode.DIGIT6,
-            KeyCode.DIGIT7, KeyCode.DIGIT8};
+            KeyCode.DIGIT7, KeyCode.DIGIT8, KeyCode.DIGIT9};
         for (int i = 0; i < ordem.length; i++) {
             Destino d = ordem[i];
             cena.getAccelerators().put(new KeyCodeCombination(teclas[i], KeyCombination.SHORTCUT_DOWN), () -> ui.roteador().ir(d));
@@ -198,6 +206,8 @@ public final class JanelaPrincipal {
         seloDoPlano.setAccessibleText("Plano " + (plano == Plano.PREMIUM ? "Premium" : "Free"));
         long id = local.sessao().perfilAtivo();
         perfil.setText("Perfil: " + local.perfis().obter(id).map(p -> p.nome()).orElse("—"));
+        botaoDaConta.setText(licenca.autenticado() ? licenca.conta().map(c -> c.nome()).orElse("Minha conta") : "Entrar");
+        botaoDaConta.setAccessibleText(licenca.autenticado() ? "Abrir minha conta" : "Entrar na conta comercial (opcional)");
         if (cena != null) {
             aplicarTema();
         }

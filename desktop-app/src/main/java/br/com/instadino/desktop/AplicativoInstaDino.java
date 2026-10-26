@@ -1,7 +1,8 @@
 package br.com.instadino.desktop;
 
 import br.com.instadino.desktop.util.DiretorioDeDados;
-import br.com.instadino.nucleo.acesso.EstadoDaLicenca;
+import br.com.instadino.licenciamento.GerenciadorDeLicenca;
+import br.com.instadino.persistencia.seguranca.ProtetorDeSegredo;
 import br.com.instadino.persistencia.seguranca.ProtetoresPadrao;
 import br.com.instadino.servicos.ContextoLocal;
 import javafx.application.Application;
@@ -16,6 +17,7 @@ import javafx.stage.Stage;
 public final class AplicativoInstaDino extends Application {
 
     private ContextoLocal local;
+    private GerenciadorDeLicenca licenca;
 
     @Override
     public void start(Stage palco) {
@@ -23,8 +25,11 @@ public final class AplicativoInstaDino extends Application {
         palco.setMinWidth(1000);
         palco.setMinHeight(680);
         try {
-            // Nesta etapa não há cliente de licenciamento: o plano efetivo é sempre Free.
-            local = ContextoLocal.abrir(DiretorioDeDados.padrao(), ProtetoresPadrao.escolher(), () -> EstadoDaLicenca.GRATUITO);
+            var dados = DiretorioDeDados.padrao();
+            ProtetorDeSegredo protetor = ProtetoresPadrao.escolher();
+            // O plano Premium só existe se houver uma licença assinada pelo servidor e validada neste computador.
+            licenca = ConfiguracaoComercial.criar(dados, protetor, java.time.Clock.systemUTC());
+            local = ContextoLocal.abrir(dados, protetor, licenca);
         } catch (RuntimeException e) {
             System.getLogger(AplicativoInstaDino.class.getName())
                     .log(System.Logger.Level.ERROR, "Falha ao iniciar o núcleo local ({0}).", e.getClass().getSimpleName());
@@ -32,13 +37,24 @@ public final class AplicativoInstaDino extends Application {
             palco.show();
             return;
         }
-        JanelaPrincipal janela = new JanelaPrincipal(local, url -> getHostServices().showDocument(url));
+        JanelaPrincipal janela = new JanelaPrincipal(local, licenca, url -> getHostServices().showDocument(url));
         palco.setScene(janela.criarCena());
         palco.show();
+        renovarLicencaEmSegundoPlano(janela);
+    }
+
+    /** Com sessão ativa e internet, renova a licença sem bloquear a interface; sem rede, vale a tolerância offline. */
+    private void renovarLicencaEmSegundoPlano(JanelaPrincipal janela) {
+        if (licenca != null && licenca.servicoConfigurado() && licenca.autenticado()) {
+            br.com.instadino.desktop.util.Tarefas.executar(p -> licenca.atualizarLicenca(), r -> janela.contexto().estadoMudou(), e -> { });
+        }
     }
 
     @Override
     public void stop() {
+        if (licenca != null) {
+            licenca.encerrar();
+        }
         if (local != null) {
             local.close();
         }

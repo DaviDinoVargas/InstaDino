@@ -36,3 +36,5 @@
 .tooltip { -fx-background-color: #1a1a28; -fx-text-fill: white; }
 .chart-plot-background { -fx-background-color: transparent; }
 .chart-vertical-grid-lines, .chart-horizontal-grid-lines { -fx-stroke: rgba(0,0,0,0.08); }
+.tab-pane .tab:selected { -fx-background-color: rgba(109,63,224,0.14); }
+.tab-pane .tab:selected .tab-label { -fx-text-fill: #3b1a99; }

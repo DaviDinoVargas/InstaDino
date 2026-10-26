@@ -186,6 +186,21 @@ class PagamentosSandboxTest extends PagamentosBase {
         assertThat(java.time.Instant.parse(assinatura(token).get("validaAte").asText())).isEqualTo(relogio.instant().plus(Duration.ofDays(30)));
     }
 
+    /**
+     * Prova determinística da idempotência no banco: gravar duas vezes o mesmo id de evento tem de falhar por violação
+     * de chave. Com {@code merge} (comportamento padrão para id atribuído) a segunda gravação seria um UPDATE silencioso
+     * e a corrida entre entregas simultâneas processaria o mesmo evento duas vezes.
+     */
+    @Test
+    void gravarOMesmoIdDeEventoDuasVezesViolaAChavePrimaria() {
+        String id = "evt_pk_" + UUID.randomUUID();
+        var agora = relogio.instant();
+        eventos.saveAndFlush(new br.com.instadino.servidor.dominio.EventoPagamento(id, "PAGAMENTO_APROVADO", agora, agora, null, "PROCESSADO"));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> eventos.saveAndFlush(
+                new br.com.instadino.servidor.dominio.EventoPagamento(id, "PAGAMENTO_APROVADO", agora, agora, null, "PROCESSADO")))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
     @Test
     void eventoAtrasadoForaDeOrdemNaoConcedePremium() throws Exception {
         String token = clienteEToken();

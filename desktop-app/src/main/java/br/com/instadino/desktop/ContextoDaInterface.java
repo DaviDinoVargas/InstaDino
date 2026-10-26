@@ -2,6 +2,7 @@ package br.com.instadino.desktop;
 
 import br.com.instadino.desktop.componentes.Notificador;
 import br.com.instadino.desktop.navegacao.Roteador;
+import br.com.instadino.licenciamento.GerenciadorDeLicenca;
 import br.com.instadino.servicos.ContextoLocal;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -11,6 +12,7 @@ import javafx.stage.Window;
 public final class ContextoDaInterface {
 
     private final ContextoLocal local;
+    private final GerenciadorDeLicenca licenca;
     private final Notificador notificador;
     private final Supplier<Window> janela;
     private final Consumer<String> navegador;
@@ -18,8 +20,10 @@ public final class ContextoDaInterface {
     private Runnable aoMudarEstado = () -> { };
     private Consumer<String> buscaGlobal = texto -> { };
 
-    public ContextoDaInterface(ContextoLocal local, Notificador notificador, Supplier<Window> janela, Consumer<String> navegador) {
+    public ContextoDaInterface(ContextoLocal local, GerenciadorDeLicenca licenca, Notificador notificador, Supplier<Window> janela,
+                               Consumer<String> navegador) {
         this.local = local;
+        this.licenca = licenca;
         this.notificador = notificador;
         this.janela = janela;
         this.navegador = navegador;
@@ -27,6 +31,20 @@ public final class ContextoDaInterface {
 
     public ContextoLocal local() {
         return local;
+    }
+
+    /** Sessão comercial e licença. Nunca nulo; {@code servicoConfigurado()} indica se há serviço comercial. */
+    public GerenciadorDeLicenca licenca() {
+        return licenca;
+    }
+
+    /** Abre uma página de pagamento HTTPS do provedor no navegador (nunca endereços de teste ou inseguros). */
+    public void abrirPaginaDePagamento(String url) {
+        if (UrlsSeguras.paginaDePagamento(url)) {
+            navegador.accept(url);
+        } else {
+            notificador.erro("Não foi possível abrir a página de pagamento.");
+        }
     }
 
     public Notificador notificador() {

@@ -18,6 +18,7 @@ public final class Telas {
             case RELACIONAMENTOS -> new RelacionamentosTela(ui);
             case HISTORICO -> new HistoricoTela(ui);
             case RELATORIOS -> new RelatoriosTela(ui);
+            case CONTA -> new ContaTela(ui);
             case PREMIUM -> new PremiumTela(ui);
             case SEGURANCA -> new SegurancaTela(ui);
             case CONFIGURACOES -> new ConfiguracoesTela(ui);

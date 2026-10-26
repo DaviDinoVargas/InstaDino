@@ -14,12 +14,12 @@
   <modules>
     <module>application-core</module>
     <module>payment-contracts</module>
-    <module>licensing-client</module>
     <module>backend-api</module>
     <module>persistence</module>
     <module>shared-test-fixtures</module>
     <module>instagram-importer</module>
     <module>analytics-engine</module>
+    <module>licensing-client</module>
     <module>application-services</module>
     <module>desktop-app</module>
   </modules>

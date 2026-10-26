@@ -127,6 +127,6 @@ class SemeaduraTest extends TesteBase {
     @Test
     void chaveDeLicencaDeDesenvolvimentoEGeradaForaDoRepositorio() {
         assertThat(assinador.chavePublica()).isNotNull();
-        assertThat(Files.exists(Path.of(System.getProperty("java.io.tmpdir"), "instadino-semeadura-teste", "chaves-dev", "licenca-dev.pub"))).isTrue();
+        assertThat(Files.exists(Path.of(System.getProperty("java.io.tmpdir"), "instadino-semeadura-teste", "chaves-dev", "k1.pub"))).isTrue();
     }
 }

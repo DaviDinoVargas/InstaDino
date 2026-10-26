@@ -194,3 +194,17 @@
 .default-color2.chart-series-line { -fx-stroke: #4f8cff; -fx-stroke-width: 3; }
 .pie-label-line { -fx-stroke: rgba(255,255,255,0.3); }
 .chart-pie-label { -fx-fill: -cor-texto; }
+
+/* ---------- abas ---------- */
+.tab-pane > .tab-header-area > .tab-header-background { -fx-background-color: transparent; -fx-opacity: 0; }
+.tab-pane > .tab-header-area { -fx-padding: 0 0 8 0; }
+.tab-pane > .tab-content-area { -fx-background-color: transparent; }
+.tab-pane .tab {
+    -fx-background-color: transparent; -fx-background-insets: 0; -fx-background-radius: 10; -fx-border-color: -cor-borda;
+    -fx-border-radius: 10; -fx-padding: 6 16 6 16; -fx-cursor: hand;
+}
+.tab-pane .tab:selected { -fx-background-color: rgba(139,92,246,0.28); -fx-border-color: -cor-acento; }
+.tab-pane .tab .tab-label { -fx-text-fill: -cor-suave; -fx-font-size: 13px; }
+.tab-pane .tab:selected .tab-label { -fx-text-fill: white; -fx-font-weight: bold; }
+.tab-pane .tab:focused { -fx-border-color: -cor-foco; -fx-border-width: 2; }
+.tab-pane:top > .tab-header-area > .headers-region > .tab { -fx-background-insets: 0; }
