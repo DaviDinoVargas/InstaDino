@@ -65,13 +65,12 @@ jobs:
             dist/SHA256SUMS.txt
           if-no-files-found: error
 
-  # EXPERIMENTAL: valida instalação, execução e desinstalação reais do MSI não assinado em máquina Windows.
-  # Não impede o restante do fluxo; o resultado fica visível nos passos deste job.
+  # Valida instalação, execução e desinstalação reais do MSI (não assinado) em máquina Windows,
+  # inclusive que a desinstalação preserva os dados do usuário.
   instalador-msi:
     name: Instalador MSI (instalar, executar, desinstalar)
     runs-on: windows-latest
     timeout-minutes: 45
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -94,7 +93,7 @@ jobs:
           Write-Host "Instalado em $exe"
       - name: Teste de fumaça do aplicativo instalado
         shell: pwsh
-        run: scripts/testar-pacote-windows.ps1 -Executavel (Join-Path $env:LOCALAPPDATA 'InstaDino\InstaDino.exe')
+        run: scripts/testar-pacote-windows.ps1 -Executavel (Join-Path $env:LOCALAPPDATA 'InstaDino\InstaDino.exe') -PastaDeDados (Join-Path $env:LOCALAPPDATA 'InstaDinoDados') -Manter
       - name: Desinstalar e conferir que nada ficou
         shell: pwsh
         run: |
@@ -104,6 +103,11 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Desinstalação falhou (código $($p.ExitCode))." }
           if (Test-Path (Join-Path $env:LOCALAPPDATA 'InstaDino\InstaDino.exe')) { throw 'O executável continua instalado.' }
           Write-Host 'Desinstalado.'
+          # os dados do usuário (banco e chave) ficam em outra pasta e precisam sobreviver à desinstalação
+          foreach ($arquivo in 'instadino.db', 'chave-do-banco.protegida') {
+            if (-not (Test-Path (Join-Path $env:LOCALAPPDATA "InstaDinoDados\$arquivo"))) { throw "A desinstalação removeu dados do usuário: $arquivo" }
+          }
+          Write-Host 'OK: dados do usuário preservados após a desinstalação.'
       - name: Resumir falhas como anotações
         if: failure()
         shell: pwsh

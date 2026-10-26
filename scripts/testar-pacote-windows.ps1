@@ -2,7 +2,7 @@
 .SYNOPSIS
   Teste de fumaça do aplicativo empacotado no Windows: inicia, cria o banco e confere a proteção em disco.
 .DESCRIPTION
-  Usa uma pasta de dados temporária (INSTADINO_DADOS). Verifica que:
+  Usa uma pasta de dados temporária (INSTADINO_DADOS) ou, com -PastaDeDados, o caminho padrão do aplicativo. Verifica que:
     1. o processo continua vivo após alguns segundos (não falhou na inicialização);
     2. o banco foi criado e NÃO começa com "SQLite format 3" (está cifrado);
     3. o arquivo da chave é um blob da DPAPI (assinatura 01 00 00 00 D0 8C 9D DF).
@@ -11,14 +11,23 @@
 [CmdletBinding()]
 param(
     [string]$Executavel = (Join-Path (Split-Path -Parent $PSScriptRoot) 'dist\InstaDino\InstaDino.exe'),
-    [int]$Segundos = 25
+    [int]$Segundos = 25,
+    [string]$PastaDeDados,
+    [switch]$Manter
 )
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path $Executavel)) { throw "Executável não encontrado: $Executavel" }
 
-$dados = Join-Path ([System.IO.Path]::GetTempPath()) ("instadino-fumaca-" + [guid]::NewGuid())
-New-Item -ItemType Directory -Path $dados | Out-Null
-$env:INSTADINO_DADOS = $dados
+# Sem -PastaDeDados usa uma pasta temporária. Com -PastaDeDados e SEM definir INSTADINO_DADOS no processo,
+# o aplicativo usa o caminho padrão do Windows (%LOCALAPPDATA%\InstaDinoDados) quando ele for informado aqui.
+if ($PastaDeDados) {
+    $dados = $PastaDeDados
+    Remove-Item Env:INSTADINO_DADOS -ErrorAction SilentlyContinue
+} else {
+    $dados = Join-Path ([System.IO.Path]::GetTempPath()) ("instadino-fumaca-" + [guid]::NewGuid())
+    New-Item -ItemType Directory -Path $dados | Out-Null
+    $env:INSTADINO_DADOS = $dados
+}
 $processo = $null
 try {
     $processo = Start-Process -FilePath $Executavel -PassThru
@@ -42,6 +51,6 @@ try {
 } finally {
     if ($processo -and -not $processo.HasExited) { Stop-Process -Id $processo.Id -Force }
     Start-Sleep -Seconds 1
-    Remove-Item $dados -Recurse -Force -ErrorAction SilentlyContinue
+    if (-not $Manter) { Remove-Item $dados -Recurse -Force -ErrorAction SilentlyContinue }
 }
 Write-Host 'Teste de fumaça concluído com sucesso.'
