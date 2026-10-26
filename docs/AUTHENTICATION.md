@@ -7,7 +7,7 @@ O backend comercial é a única fonte da verdade sobre contas. O desktop é um c
 | Aspecto | Implementação |
 |---|---|
 | Senha | Argon2id, sal de 16 bytes, hash de 32 bytes, memória 19 MiB, 2 iterações, paralelismo 1 (mínimo recomendado pela OWASP) |
-| Política | 12 a 128 caracteres; rejeita senhas comuns e senhas que contenham o e-mail ou o nome do produto |
+| Política | 12 a 128 caracteres; rejeita uma lista curta de senhas comuns, senhas com menos de 4 caracteres distintos e senhas que contenham a parte local do e-mail (≥ 6 caracteres). Não consulta bases de senhas vazadas |
 | E-mail | Normalizado; verificação por token de uso único (24 h) |
 | Papéis | `CLIENTE` e `MASTER`; definidos **somente** no servidor (semeadura ou ação administrativa auditada). Nenhum campo do cliente é aceito como papel |
 
