@@ -201,6 +201,12 @@
 .default-color0.chart-series-line { -fx-stroke: #8b5cf6; -fx-stroke-width: 3; }
 .default-color1.chart-series-line { -fx-stroke: #d946ef; -fx-stroke-width: 3; }
 .default-color2.chart-series-line { -fx-stroke: #4f8cff; -fx-stroke-width: 3; }
+.default-color0.chart-line-symbol { -fx-background-color: #8b5cf6, -cor-superficie; }
+.default-color1.chart-line-symbol { -fx-background-color: #d946ef, -cor-superficie; }
+.default-color2.chart-line-symbol { -fx-background-color: #4f8cff, -cor-superficie; }
+.default-color0.chart-legend-item-symbol { -fx-background-color: #8b5cf6; }
+.default-color1.chart-legend-item-symbol { -fx-background-color: #d946ef; }
+.default-color2.chart-legend-item-symbol { -fx-background-color: #4f8cff; }
 .pie-label-line { -fx-stroke: rgba(255,255,255,0.3); }
 .chart-pie-label { -fx-fill: -cor-texto; }
 
