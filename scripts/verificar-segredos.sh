@@ -39,7 +39,7 @@ padroes=(
   'AIza[0-9A-Za-z_-]{35}'
 )
 for padrao in "${padroes[@]}"; do
-  achados=$(git grep -nIE -e "$padrao" -- . ':(exclude)scripts/verificar-segredos.sh' ':(exclude)*/src/test/*' 2>/dev/null || true)
+  achados=$(git grep -nIE -e "$padrao" -- . ':(exclude)scripts/verificar-segredos.sh' ':(exclude)scripts/testar-verificador.sh' ':(exclude)*/src/test/*' 2>/dev/null || true)
   if [ -n "$achados" ]; then
     relatar "possível segredo (padrão $padrao):"
     echo "$achados" | sed 's/^/    /' >&2
@@ -49,7 +49,7 @@ done
 # 3) Atribuições de senha/segredo literais em arquivos de configuração e código de produção
 achados=$(git grep -nIiE '(password|senha|secret|segredo|api[_-]?key|token)[A-Za-z_.-]*[[:space:]]*[=:][[:space:]]*["'"'"']?[A-Za-z0-9/+_.!@#$%^&*-]{12,}["'"'"']?' \
   -- '*.properties' '*.yml' '*.yaml' '*.xml' '*.json' '*.env' '*.sh' '*.ps1' '*.bat' \
-  ':(exclude)scripts/verificar-segredos.sh' ':(exclude)pom.xml' ':(exclude)*/pom.xml' 2>/dev/null \
+  ':(exclude)scripts/verificar-segredos.sh' ':(exclude)scripts/testar-verificador.sh' ':(exclude)pom.xml' ':(exclude)*/pom.xml' 2>/dev/null \
   | grep -viE 'changeme|exemplo|example|placeholder|\$\{|<[a-z_]+>|SEU_|\.\.\.' || true)
 if [ -n "$achados" ]; then
   relatar "possível credencial literal em configuração:"
@@ -58,7 +58,7 @@ fi
 
 # 4) Referências proibidas em arquivos versionados (requisito SUP-05)
 achados=$(git grep -nIiE 'co-authored-by|generated (with|by) (claude|chatgpt|copilot)|claude code|anthropic' \
-  -- . ':(exclude)scripts/verificar-segredos.sh' ':(exclude).github/workflows/*' 2>/dev/null || true)
+  -- . ':(exclude)scripts/verificar-segredos.sh' ':(exclude)scripts/testar-verificador.sh' ':(exclude).github/workflows/*' 2>/dev/null || true)
 if [ -n "$achados" ]; then
   relatar "referência proibida a ferramentas/coautoria:"
   echo "$achados" | sed 's/^/    /' >&2

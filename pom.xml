@@ -13,6 +13,7 @@
 
   <modules>
     <module>application-core</module>
+    <module>persistence</module>
   </modules>
 
   <properties>
