@@ -12,8 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -64,7 +62,7 @@ public final class ImportadorDeExportacao {
      */
     public ResultadoDaImportacao importar(Path zip, ConfiguracaoDeImportacao configuracao, Cancelamento cancelamento,
                                           OuvinteDeProgresso ouvinte) {
-        Instant inicio = Instant.now();
+        Cronometro inicio = new Cronometro();
         InventarioDoZip inventario = inspecionar(zip, cancelamento, ouvinte);
 
         List<EntradaInventariada> alvos = inventario.entradas().stream()
@@ -163,6 +161,6 @@ public final class ImportadorDeExportacao {
             avisos.add("A lista \"" + c.rotulo() + "\" pode estar incompleta; comparações que dependem dela devem ser interpretadas com cautela.");
         }
         return new ResultadoDaImportacao(VERSAO_DO_PARSER, inventario, relacionamentos, processadas, incompletas, validos,
-                invalidos, duplicados, invalidosPorMotivo, avisos, Duration.between(inicio, Instant.now()));
+                invalidos, duplicados, invalidosPorMotivo, avisos, inicio.decorrido());
     }
 }

@@ -54,4 +54,32 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- Monta a pasta de entrada do jpackage: o jar do aplicativo e todas as dependências de execução (sem testes). -->
+    <profile>
+      <id>empacotamento</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>reunir-dependencias</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/entrada-jpackage</outputDirectory>
+                  <includeScope>runtime</includeScope>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

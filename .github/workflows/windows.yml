@@ -1,0 +1,121 @@
+name: Windows
+
+on:
+  push:
+    branches: [main, desenvolvimento, 'funcionalidade/**', 'correcao/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testar-e-empacotar:
+    name: Testar e empacotar no Windows (Java 21)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build e testes completos no Windows (inclui DPAPI real e interface)
+        shell: pwsh
+        run: |
+          mvn -B -ntp verify 2>&1 | Tee-Object -FilePath mvn.log
+          exit $LASTEXITCODE
+      - name: Resumir falhas como anotações
+        if: failure()
+        shell: pwsh
+        run: |
+          # Facilita o diagnóstico sem baixar o log completo: cada relatório com falha vira uma anotação.
+          Get-ChildItem -Recurse -Path . -Filter *.txt | Where-Object { $_.DirectoryName -like '*surefire-reports' } | ForEach-Object {
+            $texto = Get-Content $_.FullName -Raw
+            if ($texto -match '<<< (FAILURE|ERROR)!') {
+              $trecho = (($texto -split "`n" | Select-Object -First 30) -join ' | ') -replace '[\r%]', ' '
+              if ($trecho.Length -gt 1500) { $trecho = $trecho.Substring(0, 1500) }
+              Write-Host "::error title=$($_.BaseName)::$trecho"
+            }
+          }
+          if (Test-Path mvn.log) {
+            $erros = (Select-String -Path mvn.log -Pattern '\[ERROR\]' | Select-Object -First 15 | ForEach-Object { $_.Line.Trim() }) -join ' | '
+            if ($erros.Length -gt 1500) { $erros = $erros.Substring(0, 1500) }
+            if ($erros) { Write-Host "::error title=Maven::$($erros -replace '[\r%]', ' ')" }
+          }
+      - name: Publicar relatórios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-de-teste-windows
+          path: '**/target/surefire-reports/*.xml'
+          if-no-files-found: ignore
+      - name: Gerar o aplicativo (jpackage, NÃO assinado)
+        shell: pwsh
+        run: scripts/empacotar-windows.ps1
+      - name: Teste de fumaça do aplicativo empacotado
+        shell: pwsh
+        run: scripts/testar-pacote-windows.ps1
+      - name: Publicar o pacote (não assinado)
+        uses: actions/upload-artifact@v4
+        with:
+          name: InstaDino-windows-x64-NAO-ASSINADO
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+  # Valida instalação, execução e desinstalação reais do MSI (não assinado) em máquina Windows,
+  # inclusive que a desinstalação preserva os dados do usuário.
+  instalador-msi:
+    name: Instalador MSI (instalar, executar, desinstalar)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Gerar o MSI (não assinado)
+        shell: pwsh
+        run: scripts/empacotar-windows.ps1 -Tipo msi
+      - name: Instalar em silêncio
+        shell: pwsh
+        run: |
+          $msi = (Get-ChildItem dist -Filter 'InstaDino-*.msi' | Select-Object -First 1).FullName
+          $p = Start-Process msiexec.exe -ArgumentList '/i', "`"$msi`"", '/qn', '/l*v', 'instalacao.log' -Wait -PassThru
+          Write-Host "msiexec /i terminou com código $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "Instalação falhou (código $($p.ExitCode))." }
+          $exe = Join-Path $env:LOCALAPPDATA 'InstaDino\InstaDino.exe'
+          if (-not (Test-Path $exe)) { throw "Executável não encontrado após a instalação: $exe" }
+          Write-Host "Instalado em $exe"
+      - name: Teste de fumaça do aplicativo instalado
+        shell: pwsh
+        run: scripts/testar-pacote-windows.ps1 -Executavel (Join-Path $env:LOCALAPPDATA 'InstaDino\InstaDino.exe') -PastaDeDados (Join-Path $env:LOCALAPPDATA 'InstaDinoDados') -Manter
+      - name: Desinstalar e conferir que nada ficou
+        shell: pwsh
+        run: |
+          $msi = (Get-ChildItem dist -Filter 'InstaDino-*.msi' | Select-Object -First 1).FullName
+          $p = Start-Process msiexec.exe -ArgumentList '/x', "`"$msi`"", '/qn', '/l*v', 'desinstalacao.log' -Wait -PassThru
+          Write-Host "msiexec /x terminou com código $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "Desinstalação falhou (código $($p.ExitCode))." }
+          if (Test-Path (Join-Path $env:LOCALAPPDATA 'InstaDino\InstaDino.exe')) { throw 'O executável continua instalado.' }
+          Write-Host 'Desinstalado.'
+          # os dados do usuário (banco e chave) ficam em outra pasta e precisam sobreviver à desinstalação
+          foreach ($arquivo in 'instadino.db', 'chave-do-banco.protegida') {
+            if (-not (Test-Path (Join-Path $env:LOCALAPPDATA "InstaDinoDados\$arquivo"))) { throw "A desinstalação removeu dados do usuário: $arquivo" }
+          }
+          Write-Host 'OK: dados do usuário preservados após a desinstalação.'
+      - name: Resumir falhas como anotações
+        if: failure()
+        shell: pwsh
+        run: |
+          foreach ($log in 'instalacao.log', 'desinstalacao.log') {
+            if (Test-Path $log) {
+              $erros = (Select-String -Path $log -Pattern 'Error|erro|return value 3' | Select-Object -First 8 | ForEach-Object { $_.Line.Trim() }) -join ' | '
+              if ($erros.Length -gt 1400) { $erros = $erros.Substring(0, 1400) }
+              if ($erros) { Write-Host "::error title=$log::$($erros -replace '[\r%]', ' ')" }
+            }
+          }

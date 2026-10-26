@@ -1,4 +1,4 @@
-# Sobe o backend de SANDBOX local e o aplicativo desktop no Windows (PowerShell).
+﻿# Sobe o backend de SANDBOX local e o aplicativo desktop no Windows (PowerShell).
 # Uso: .\scripts\executar-sandbox.ps1 [-SomenteBackend]
 # Requisitos: JDK 21 e Maven 3.9+ no PATH.
 #
