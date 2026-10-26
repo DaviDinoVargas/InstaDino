@@ -17,8 +17,11 @@ A decisão de acesso é centralizada em `PoliticaDeAcesso` (módulo `application
 | Comparação entre períodos | `comparacao.periodos` | Premium | `ServicoDeHistorico.comparar` |
 | Filtros compostos (período, só com data) | `filtros.compostos` | Premium | `consultar` |
 | CSV personalizado | `exportacao.csv.personalizado` | Premium | `exportarCsvPersonalizado` |
+| Favoritos, etiquetas, notas privadas | `favoritos`, `etiquetas`, `notas.privadas` | Premium | `ServicoDeAnotacoes`; criar e alterar exige Premium, **ler e remover não** (perder o plano não prende o usuário aos próprios dados) |
+| Múltiplos perfis locais | `perfis.multiplos` | Premium | `ServicoDePerfis`; o Free tem 1 perfil; criar outros exige Premium, selecionar/renomear/excluir não |
+| Backup protegido por senha | `backup.protegido` | Premium | `ServicoDeDados.criarBackup`; **restaurar nunca exige plano** |
 
-Os demais itens do catálogo (`Funcionalidade`) existem para a política, mas **ainda não têm implementação**: gráficos históricos, relatório PDF, favoritos, etiquetas, notas, múltiplos perfis na interface, biblioteca de conteúdo, análise de atividade, explorador, painéis, backup protegido, relatórios comparativos e arquivo de mensagens.
+Os demais itens do catálogo (`Funcionalidade`) existem para a política, mas **ainda não têm implementação**: gráficos históricos, relatório PDF, biblioteca de conteúdo, análise de atividade, explorador, painéis, relatórios comparativos e arquivo de mensagens.
 
 ## Regras verificadas por teste
 
