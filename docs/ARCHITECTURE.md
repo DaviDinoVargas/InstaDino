@@ -25,16 +25,16 @@ Regra central: **os dados da exportação nunca atravessam a seta HTTPS.** O cli
 
 | Módulo | Responsabilidade | Depende de | Estado |
 |---|---|---|---|
-| `payment-contracts` | DTOs e contratos comerciais compartilhados (planos, licença, eventos, `ProvedorPagamento`) | — | planejado |
+| `payment-contracts` | DTOs e contratos comerciais compartilhados (planos, licença, eventos, `ProvedorPagamento`) | — | **implementado** |
 | `application-core` | Modelos de domínio (`NomeDeUsuario`, `Relacionamento`), catálogo de funcionalidades, política Free/Premium | — | **implementado** |
 | `instagram-importer` | Validação e inventário do ZIP, parsers, normalização | `application-core` | **implementado** (relacionamentos) |
 | `analytics-engine` | Comparação de conjuntos, indicadores sociais, CSV | `application-core` | **implementado** (sem PDF e gráficos) |
 | `persistence` | SQLite cifrado, migrações, repositórios, proteção de chave | `application-core` | **implementado** |
 | `application-services` | Casos de uso que combinam importador, análise, persistência e política | todos os acima | **implementado** (ver nota) |
 | `shared-test-fixtures` | Exportações sintéticas e ZIPs maliciosos (somente teste) | — | **implementado** |
-| `licensing-client` | Validação de licença assinada, cache seguro, cliente da API | `payment-contracts` | planejado |
-| `backend-api` | Autenticação, sessões, licenças, pagamentos, auditoria (domínio e persistência em pacotes internos) | `payment-contracts` | planejado |
-| `desktop-app` | JavaFX, navegação, telas, composição | todos os módulos do cliente | planejado |
+| `licensing-client` | Validação de licença assinada, cache seguro, cliente da API | `application-core`, `payment-contracts`, `persistence` (apenas a interface de proteção de segredos) | **implementado** |
+| `backend-api` | Autenticação, sessões, licenças, pagamentos, auditoria (domínio e persistência em pacotes internos) | `payment-contracts` (usa `licensing-client` só em testes) | **implementado** (pagamentos apenas em sandbox) |
+| `desktop-app` | JavaFX, navegação, telas, composição | todos os módulos do cliente | **implementado** |
 | `packaging` | `jpackage`, instalador, assinatura | `desktop-app` | planejado |
 
 **Nota sobre `application-services`:** os casos de uso ficam em módulo próprio, e não em `application-core`, porque dependem do importador, do motor de análise e da persistência, que por sua vez dependem de `application-core`; colocá-los lá criaria dependência circular.

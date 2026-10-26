@@ -13,11 +13,12 @@ Aplicativo desktop para Windows, escrito em Java, que analisa **localmente** os 
 | Banco SQLite **cifrado**, chave protegida por DPAPI (Windows), migrações versionadas, backup, exclusão | **Implementado e testado em Linux**; DPAPI e Windows ainda **não verificados** em Windows real |
 | Histórico, comparação entre importações, CSV (básico e personalizado), política Free/Premium | **Implementado e testado** |
 | Interface JavaFX (tema escuro/claro, navegação, importação guiada, tabelas paginadas) | **Implementado**, testado sob display virtual |
-| Conta, login, licença assinada, backend comercial, pagamentos (sandbox) | **Ainda não implementado** |
+| Backend comercial (contas, sessões, licença assinada Ed25519, auditoria), tela de Conta/Premium no desktop | **Implementado e testado** (ponta a ponta local; ver `docs/AUTHENTICATION.md` e `docs/LICENSING.md`) |
+| Pagamentos | **Somente sandbox.** Sem provedor real e sem cobrança possível; produção desabilitada (`docs/PAYMENTS.md`) |
 | Gráficos históricos, PDF, etiquetas, favoritos, biblioteca de conteúdo, atividade, mensagens | **Ainda não implementado** |
 | Instalador Windows (`jpackage`), assinatura de código | **Ainda não gerado** (exige Windows) |
 
-Avaliações de segurança: a **1** (modelo de ameaças) está em `docs/security/`; as **2** e **3** serão feitas nas fases correspondentes.
+Avaliações de segurança: a **1** (modelo de ameaças) e a **2** (`docs/security/SECURITY_ASSESSMENT_2.md`) estão em `docs/security/`; a **3** (pré-lançamento) será feita na Fase 6. A Avaliação 2 deixa pendências abertas, entre elas a auditoria de vulnerabilidades de dependências.
 
 ## Princípios
 
@@ -51,6 +52,14 @@ JAVA_TOOL_OPTIONS="-Dinstadino.modoInseguroDesenvolvimento=true" mvn -B -pl desk
 Sem esse opt-in, fora do Windows, o aplicativo recusa criar o banco e mostra uma tela explicando o motivo.
 
 No Windows a chave do banco é protegida pela DPAPI e nenhum opt-in é necessário.
+
+## Executar com o backend local (sandbox)
+
+```bash
+scripts/executar-sandbox.sh      # Windows: scripts\executar-sandbox.ps1
+```
+
+Compila, sobe o backend em `127.0.0.1:8443` com pagamentos em sandbox e abre o desktop apontando para ele. No perfil de desenvolvimento são criadas três contas de demonstração (master, premium, free). As senhas **não estão no repositório**: defina `INSTADINO_SENHA_MASTER`, `INSTADINO_SENHA_PREMIUM` e `INSTADINO_SENHA_FREE` antes da primeira execução, ou consulte o arquivo `contas-semeadas.txt` gerado localmente (ignorado pelo Git). Detalhes em `docs/AUTHENTICATION.md`.
 
 ## Estrutura
 
