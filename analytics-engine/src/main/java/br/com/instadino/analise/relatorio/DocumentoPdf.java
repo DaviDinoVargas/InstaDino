@@ -25,6 +25,14 @@ public final class DocumentoPdf implements AutoCloseable {
 
     public static final int MAXIMO_DE_PAGINAS = 300;
 
+    static {
+        // O PDFBox consulta o mapeador de fontes ao criar uma fonte padrão e, por omissão, varre TODAS as fontes instaladas
+        // no sistema (no Windows isso levou mais de um minuto na primeira geração). As fontes padrão do PDF (Helvetica) são
+        // apenas referenciadas pelo nome e o visualizador fornece o desenho; as métricas vêm das tabelas AFM do próprio
+        // PDFBox. Um mapeador sem varredura evita a espera e deixa o resultado idêntico em qualquer máquina.
+        org.apache.pdfbox.pdmodel.font.FontMappers.set(new MapeadorSemFontesDoSistema());
+    }
+
     private static final float MARGEM = 54f;
     private static final float TAMANHO_CORPO = 10f;
     private static final float ENTRELINHA = 1.35f;
@@ -437,5 +445,65 @@ public final class DocumentoPdf implements AutoCloseable {
                 return false;
             }
         });
+    }
+
+    /** Mapeador que nunca consulta o sistema; a fonte devolvida só satisfaz o construtor (nada é desenhado pelo PDFBox). */
+    private static final class MapeadorSemFontesDoSistema implements org.apache.pdfbox.pdmodel.font.FontMapper {
+
+        @Override
+        public org.apache.pdfbox.pdmodel.font.FontMapping<org.apache.fontbox.ttf.TrueTypeFont> getTrueTypeFont(
+                String nome, org.apache.pdfbox.pdmodel.font.PDFontDescriptor descritor) {
+            return new org.apache.pdfbox.pdmodel.font.FontMapping<>(null, true);
+        }
+
+        @Override
+        public org.apache.pdfbox.pdmodel.font.FontMapping<org.apache.fontbox.FontBoxFont> getFontBoxFont(
+                String nome, org.apache.pdfbox.pdmodel.font.PDFontDescriptor descritor) {
+            return new org.apache.pdfbox.pdmodel.font.FontMapping<>(new FontePadrao(nome), false);
+        }
+
+        @Override
+        public org.apache.pdfbox.pdmodel.font.CIDFontMapping getCIDFont(String nome, org.apache.pdfbox.pdmodel.font.PDFontDescriptor descritor,
+                                                                        org.apache.pdfbox.pdmodel.font.PDCIDSystemInfo info) {
+            return new org.apache.pdfbox.pdmodel.font.CIDFontMapping(null, null, true);
+        }
+    }
+
+    private static final class FontePadrao implements org.apache.fontbox.FontBoxFont {
+        private final String nome;
+
+        FontePadrao(String nome) {
+            this.nome = nome;
+        }
+
+        @Override
+        public String getName() {
+            return nome;
+        }
+
+        @Override
+        public org.apache.fontbox.util.BoundingBox getFontBBox() {
+            return new org.apache.fontbox.util.BoundingBox(-166f, -225f, 1000f, 931f); // caixa da Helvetica (AFM)
+        }
+
+        @Override
+        public List<Number> getFontMatrix() {
+            return List.of(0.001f, 0f, 0f, 0.001f, 0f, 0f);
+        }
+
+        @Override
+        public java.awt.geom.GeneralPath getPath(String nomeDoGlifo) {
+            return new java.awt.geom.GeneralPath();
+        }
+
+        @Override
+        public float getWidth(String nomeDoGlifo) {
+            return 500f;
+        }
+
+        @Override
+        public boolean hasGlyph(String nomeDoGlifo) {
+            return true;
+        }
     }
 }
