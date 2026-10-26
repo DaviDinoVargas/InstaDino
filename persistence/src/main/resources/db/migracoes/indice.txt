@@ -1,0 +1,2 @@
+# Uma migração por linha, em ordem. Migrações publicadas nunca são editadas: crie uma nova versão.
+V001__esquema_inicial.sql
