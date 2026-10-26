@@ -22,7 +22,27 @@ jobs:
           cache: maven
       - name: Build e testes completos no Windows (inclui DPAPI real e interface)
         shell: pwsh
-        run: mvn -B -ntp verify
+        run: |
+          mvn -B -ntp verify 2>&1 | Tee-Object -FilePath mvn.log
+          exit $LASTEXITCODE
+      - name: Resumir falhas como anotações
+        if: failure()
+        shell: pwsh
+        run: |
+          # Facilita o diagnóstico sem baixar o log completo: cada relatório com falha vira uma anotação.
+          Get-ChildItem -Recurse -Path . -Filter *.txt | Where-Object { $_.DirectoryName -like '*surefire-reports' } | ForEach-Object {
+            $texto = Get-Content $_.FullName -Raw
+            if ($texto -match '<<< (FAILURE|ERROR)!') {
+              $trecho = (($texto -split "`n" | Select-Object -First 30) -join ' | ') -replace '[\r%]', ' '
+              if ($trecho.Length -gt 1500) { $trecho = $trecho.Substring(0, 1500) }
+              Write-Host "::error title=$($_.BaseName)::$trecho"
+            }
+          }
+          if (Test-Path mvn.log) {
+            $erros = (Select-String -Path mvn.log -Pattern '\[ERROR\]' | Select-Object -First 15 | ForEach-Object { $_.Line.Trim() }) -join ' | '
+            if ($erros.Length -gt 1500) { $erros = $erros.Substring(0, 1500) }
+            if ($erros) { Write-Host "::error title=Maven::$($erros -replace '[\r%]', ' ')" }
+          }
       - name: Publicar relatórios de teste
         if: always()
         uses: actions/upload-artifact@v4
