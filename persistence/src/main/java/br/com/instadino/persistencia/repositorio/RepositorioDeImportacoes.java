@@ -33,6 +33,10 @@ public final class RepositorioDeImportacoes {
                                      Map<String, int[]> categorias) {
     }
 
+    /** Totais de uma importação; os mútuos são a interseção entre seguidores e seguindo (mesma regra da análise). */
+    public record Contagens(int seguidores, int seguindo, int mutuos) {
+    }
+
     private static final int LOTE = 5000;
 
     private final BancoLocal banco;
@@ -177,6 +181,26 @@ public final class RepositorioDeImportacoes {
     }
 
     /** JSON de resumo gravado com a importação (categorias incompletas etc.); nulo se não houver. */
+    /** Conta seguidores, seguindo e mútuos direto no banco, sem carregar as listas. */
+    public Contagens contagens(String importacaoId) {
+        return banco.emTransacao(c -> {
+            try (PreparedStatement p = c.prepareStatement(
+                    "SELECT (SELECT count(*) FROM relacionamento WHERE importacao_id = ? AND tipo = 'SEGUIDOR'), "
+                            + "(SELECT count(*) FROM relacionamento WHERE importacao_id = ? AND tipo = 'SEGUINDO'), "
+                            + "(SELECT count(*) FROM relacionamento a JOIN relacionamento b "
+                            + "ON b.importacao_id = a.importacao_id AND b.usuario = a.usuario AND b.tipo = 'SEGUINDO' "
+                            + "WHERE a.importacao_id = ? AND a.tipo = 'SEGUIDOR')")) {
+                p.setString(1, importacaoId);
+                p.setString(2, importacaoId);
+                p.setString(3, importacaoId);
+                try (ResultSet r = p.executeQuery()) {
+                    r.next();
+                    return new Contagens(r.getInt(1), r.getInt(2), r.getInt(3));
+                }
+            }
+        });
+    }
+
     public String resumoJson(String importacaoId) {
         return banco.emTransacao(c -> {
             try (PreparedStatement p = c.prepareStatement("SELECT resumo_json FROM importacao WHERE id = ?")) {

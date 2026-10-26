@@ -75,6 +75,54 @@ public final class ServicoDeHistorico {
                 nomes(anterior.id(), tipo), nomes(recente.id(), tipo), completa(anterior, tipo), completa(recente, tipo));
     }
 
+    /**
+     * Um ponto do gráfico histórico: o que a exportação continha NAQUELA data. Os valores são observações nas datas das
+     * importações, não uma série contínua. {@code null} indica que a lista não existia (ou veio incompleta) nessa importação.
+     */
+    public record PontoDaSerie(String importacaoId, java.time.Instant importadaEm, Integer seguidores, Integer seguindo, Integer mutuos) {
+    }
+
+    /** Quantidade máxima de importações no gráfico (as mais recentes), para limitar custo e tamanho. */
+    public static final int MAXIMO_DE_PONTOS = 36;
+
+    /** Série para o gráfico histórico (Premium), da importação mais antiga para a mais recente. */
+    public List<PontoDaSerie> serieHistorica() {
+        politica.exigir(Funcionalidade.GRAFICOS_HISTORICOS);
+        List<ResumoDaImportacao> todas = new ArrayList<>(importacoes.listar(sessao.perfilAtivo()));
+        todas.sort(java.util.Comparator.comparing(ResumoDaImportacao::importadaEm));
+        if (todas.size() > MAXIMO_DE_PONTOS) {
+            todas = todas.subList(todas.size() - MAXIMO_DE_PONTOS, todas.size());
+        }
+        List<PontoDaSerie> serie = new ArrayList<>();
+        for (ResumoDaImportacao r : todas) {
+            var c = importacoes.contagens(r.id());
+            boolean seguidoresOk = completa(r, TipoDeRelacionamento.SEGUIDOR);
+            boolean seguindoOk = completa(r, TipoDeRelacionamento.SEGUINDO);
+            serie.add(new PontoDaSerie(r.id(), r.importadaEm(), seguidoresOk ? c.seguidores() : null, seguindoOk ? c.seguindo() : null,
+                    seguidoresOk && seguindoOk ? c.mutuos() : null));
+        }
+        return serie;
+    }
+
+    /** Dados de qualidade de uma importação, para o relatório de qualidade. */
+    public record QualidadeDaImportacao(ResumoDaImportacao resumo, Set<String> categoriasIncompletas, int avisos) {
+    }
+
+    public QualidadeDaImportacao qualidade(String importacaoId) {
+        ResumoDaImportacao r = daPerfil(importacaoId);
+        int avisos = 0;
+        try {
+            String bruto = importacoes.resumoJson(r.id());
+            if (bruto != null) {
+                avisos = json.readTree(bruto).path("avisos").asInt(0);
+            }
+        } catch (java.io.IOException e) {
+            avisos = 0;
+        }
+        Set<String> incompletas = incompletas(r).stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toCollection(java.util.TreeSet::new));
+        return new QualidadeDaImportacao(r, incompletas, avisos);
+    }
+
     /** Comparação manual de duas listas coladas pelo usuário, uma conta por linha. Plano Free. */
     public DiferencaDeConjuntos<NomeDeUsuario> compararManualmente(String listaA, String listaB) {
         politica.exigir(Funcionalidade.COMPARACAO_MANUAL_LISTAS);
