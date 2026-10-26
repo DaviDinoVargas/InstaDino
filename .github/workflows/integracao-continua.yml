@@ -32,12 +32,21 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Build e testes
-        run: mvn -B -ntp verify
+      - name: Instalar display virtual para os testes de interface
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgtk-3-0 libxtst6
+      - name: Build e testes (inclui interface sob Xvfb)
+        run: xvfb-run -a mvn -B -ntp verify
       - name: Publicar relatórios de teste
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: relatorios-de-teste
           path: '**/target/surefire-reports/*.xml'
+          if-no-files-found: ignore
+      - name: Publicar capturas de tela da interface
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-da-interface
+          path: desktop-app/target/capturas/*.png
           if-no-files-found: ignore
