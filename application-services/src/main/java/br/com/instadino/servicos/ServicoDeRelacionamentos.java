@@ -7,6 +7,7 @@ import br.com.instadino.nucleo.acesso.PoliticaDeAcesso;
 import br.com.instadino.nucleo.dominio.NomeDeUsuario;
 import br.com.instadino.nucleo.dominio.Relacionamento;
 import br.com.instadino.nucleo.dominio.TipoDeRelacionamento;
+import br.com.instadino.persistencia.repositorio.RepositorioDeAnotacoes;
 import br.com.instadino.persistencia.repositorio.RepositorioDeImportacoes;
 import br.com.instadino.persistencia.repositorio.RepositorioDeImportacoes.ResumoDaImportacao;
 import java.time.Instant;
@@ -25,11 +26,14 @@ public final class ServicoDeRelacionamentos {
     private final PoliticaDeAcesso politica;
     private final RepositorioDeImportacoes importacoes;
     private final SessaoLocal sessao;
+    private final RepositorioDeAnotacoes anotacoes;
 
     private String importacaoEmCache;
     private Map<TipoDeRelacionamento, List<Relacionamento>> cache;
 
-    ServicoDeRelacionamentos(PoliticaDeAcesso politica, RepositorioDeImportacoes importacoes, SessaoLocal sessao) {
+    ServicoDeRelacionamentos(PoliticaDeAcesso politica, RepositorioDeImportacoes importacoes, SessaoLocal sessao,
+                             RepositorioDeAnotacoes anotacoes) {
+        this.anotacoes = anotacoes;
         this.politica = politica;
         this.importacoes = importacoes;
         this.sessao = sessao;
@@ -62,6 +66,12 @@ public final class ServicoDeRelacionamentos {
         if (consulta.usaFiltrosCompostos()) {
             politica.exigir(Funcionalidade.FILTROS_COMPOSTOS);
         }
+        if (consulta.somenteFavoritas()) {
+            politica.exigir(Funcionalidade.FAVORITOS);
+        }
+        if (consulta.etiquetaId() != null) {
+            politica.exigir(Funcionalidade.ETIQUETAS);
+        }
         List<ContaListada> filtradas = filtrar(consulta);
         int total = filtradas.size();
         int de = Math.min(consulta.pagina() * consulta.tamanho(), total);
@@ -83,8 +93,17 @@ public final class ServicoDeRelacionamentos {
         Map<TipoDeRelacionamento, List<Relacionamento>> dados = carregar(ultima.get());
         List<ContaListada> base = visao(consulta.visao(), dados);
         String busca = consulta.busca().toLowerCase(Locale.ROOT);
+        boolean usaAnotacoes = consulta.somenteFavoritas() || consulta.etiquetaId() != null;
+        Map<String, RepositorioDeAnotacoes.Anotacao> marcadas = usaAnotacoes ? anotacoes.doPerfil(sessao.perfilAtivo()) : Map.of();
         List<ContaListada> resultado = new ArrayList<>();
         for (ContaListada c : base) {
+            if (usaAnotacoes) {
+                RepositorioDeAnotacoes.Anotacao a = marcadas.get(c.usuario());
+                if (a == null || (consulta.somenteFavoritas() && !a.favorito())
+                        || (consulta.etiquetaId() != null && a.etiquetas().stream().noneMatch(e -> e.id() == consulta.etiquetaId()))) {
+                    continue;
+                }
+            }
             if (!busca.isEmpty() && !c.usuario().contains(busca)) {
                 continue;
             }

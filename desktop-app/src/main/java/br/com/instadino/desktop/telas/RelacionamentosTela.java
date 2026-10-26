@@ -7,6 +7,8 @@ import br.com.instadino.desktop.navegacao.Destino;
 import br.com.instadino.desktop.util.Formatos;
 import br.com.instadino.desktop.util.Tarefas;
 import br.com.instadino.nucleo.acesso.Funcionalidade;
+import br.com.instadino.persistencia.repositorio.RepositorioDeAnotacoes.Anotacao;
+import br.com.instadino.persistencia.repositorio.RepositorioDeAnotacoes.Etiqueta;
 import br.com.instadino.servicos.ConsultaDeRelacionamentos;
 import br.com.instadino.servicos.ConsultaDeRelacionamentos.Ordenacao;
 import br.com.instadino.servicos.ContaListada;
@@ -17,6 +19,8 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.time.ZoneId;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javafx.animation.PauseTransition;
 import javafx.beans.property.SimpleStringProperty;
@@ -61,6 +65,9 @@ final class RelacionamentosTela extends TelaBase {
     private final DatePicker desde = new DatePicker();
     private final DatePicker ate = new DatePicker();
     private final CheckBox somenteComData = new CheckBox("Somente contas com data registrada");
+    private final CheckBox somenteFavoritas = new CheckBox("Somente favoritas");
+    private final ComboBox<Etiqueta> filtroDeEtiqueta = new ComboBox<>();
+    private Map<String, Anotacao> anotacoesVisiveis = new HashMap<>();
     private final PauseTransition atrasoDaBusca = new PauseTransition(Duration.millis(250));
     private VisaoDeRelacionamento visao = VisaoDeRelacionamento.SEGUIDORES;
     private int pagina;
@@ -129,20 +136,60 @@ final class RelacionamentosTela extends TelaBase {
         });
         ordem.setAccessibleText("Ordenação");
 
+        TableColumn<ContaListada, ContaListada> colFavorito = new TableColumn<>("★");
+        colFavorito.setCellValueFactory(c -> new javafx.beans.property.SimpleObjectProperty<>(c.getValue()));
+        colFavorito.setSortable(false);
+        colFavorito.setPrefWidth(52);
+        colFavorito.setMinWidth(52);
+        colFavorito.setMaxWidth(52);
+        colFavorito.setCellFactory(coluna -> new TableCell<>() {
+            private final Button estrela = new Button();
+
+            {
+                estrela.getStyleClass().add("botao-estrela");
+            }
+
+            @Override
+            protected void updateItem(ContaListada conta, boolean vazio) {
+                super.updateItem(conta, vazio);
+                if (vazio || conta == null) {
+                    setGraphic(null);
+                    return;
+                }
+                boolean marcada = anotacoesVisiveis.containsKey(conta.usuario()) && anotacoesVisiveis.get(conta.usuario()).favorito();
+                estrela.setText(marcada ? "★" : "☆");
+                estrela.getStyleClass().remove("estrela-marcada");
+                if (marcada) {
+                    estrela.getStyleClass().add("estrela-marcada");
+                }
+                estrela.setAccessibleText((marcada ? "Remover @" : "Marcar como favorita @") + conta.usuario());
+                estrela.setOnAction(e -> alternarFavorito(conta.usuario(), !marcada));
+                setGraphic(estrela);
+            }
+        });
         TableColumn<ContaListada, String> colUsuario = new TableColumn<>("Usuário");
         colUsuario.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().usuario()));
-        colUsuario.setPrefWidth(320);
+        colUsuario.setPrefWidth(260);
         TableColumn<ContaListada, String> colData = new TableColumn<>("Registrado em");
         colData.setCellValueFactory(c -> new SimpleStringProperty(Formatos.data(c.getValue().registradaEm())));
         colData.setPrefWidth(160);
+        TableColumn<ContaListada, String> colAnotacoes = new TableColumn<>("Etiquetas e nota");
+        colAnotacoes.setCellValueFactory(c -> new SimpleStringProperty(resumoDasAnotacoes(c.getValue().usuario())));
+        colAnotacoes.setSortable(false);
+        colAnotacoes.setPrefWidth(220);
         TableColumn<ContaListada, ContaListada> colAcao = new TableColumn<>("");
         colAcao.setCellValueFactory(c -> new javafx.beans.property.SimpleObjectProperty<>(c.getValue()));
         colAcao.setSortable(false);
         colAcao.setCellFactory(coluna -> new TableCell<>() {
             private final Button abrir = new Button("Abrir perfil");
+            private final Button anotar = new Button("Anotações…");
+            private final HBox acoes = new HBox(6, anotar, abrir);
 
             {
                 abrir.getStyleClass().add("botao-link");
+                anotar.getStyleClass().add("botao-link");
+                acoes.setAlignment(Pos.CENTER_LEFT);
+                setAlignment(Pos.CENTER_LEFT);
             }
 
             @Override
@@ -153,13 +200,17 @@ final class RelacionamentosTela extends TelaBase {
                 } else {
                     abrir.setOnAction(e -> ui.abrirPerfil(conta.urlDoPerfil()));
                     abrir.setAccessibleText("Abrir o perfil de " + conta.usuario() + " no navegador");
-                    setGraphic(abrir);
+                    anotar.setOnAction(e -> editarAnotacoes(conta.usuario()));
+                    anotar.setAccessibleText("Favorito, etiquetas e nota de " + conta.usuario());
+                    setGraphic(acoes);
                 }
             }
         });
-        colAcao.setPrefWidth(140);
+        colAcao.setPrefWidth(230);
+        tabela.getColumns().add(colFavorito);
         tabela.getColumns().add(colUsuario);
         tabela.getColumns().add(colData);
+        tabela.getColumns().add(colAnotacoes);
         tabela.getColumns().add(colAcao);
         tabela.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         tabela.setPlaceholder(new Label("Nenhuma conta para mostrar."));
@@ -198,18 +249,37 @@ final class RelacionamentosTela extends TelaBase {
             desde.setValue(null);
             ate.setValue(null);
             somenteComData.setSelected(false);
+            somenteFavoritas.setSelected(false);
+            filtroDeEtiqueta.setValue(null);
             pagina = 0;
             carregar();
         });
         desde.setPrefWidth(150);
         ate.setPrefWidth(150);
-        FlowPane controles = new FlowPane(10, 8, new Label("Data de registro:"), desde, ate, somenteComData, aplicar, limpar);
+        boolean anotacoesLiberadas = ui.local().politica().permite(Funcionalidade.FAVORITOS) && ui.local().politica().permite(Funcionalidade.ETIQUETAS);
+        somenteFavoritas.setDisable(!anotacoesLiberadas);
+        filtroDeEtiqueta.setPromptText("Etiqueta");
+        filtroDeEtiqueta.setDisable(!anotacoesLiberadas);
+        filtroDeEtiqueta.setAccessibleText("Filtrar por etiqueta");
+        filtroDeEtiqueta.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(Etiqueta e) {
+                return e == null ? "Todas as etiquetas" : e.nome();
+            }
+
+            @Override
+            public Etiqueta fromString(String s) {
+                return null;
+            }
+        });
+        atualizarFiltroDeEtiqueta();
+        FlowPane controles = new FlowPane(10, 8, new Label("Data de registro:"), desde, ate, somenteComData, somenteFavoritas, filtroDeEtiqueta, aplicar, limpar);
         controles.setAlignment(Pos.CENTER_LEFT);
         painelAvancado.getStyleClass().add("cartao");
         painelAvancado.getChildren().setAll(titulo, controles);
         if (!premium) {
             controles.setDisable(true);
-            painelAvancado.getChildren().add(new HBox(8, Ui.pequeno("Combine filtros de período e data com o plano Premium."),
+            painelAvancado.getChildren().add(new HBox(8, Ui.pequeno("Combine filtros de período, favoritas e etiquetas com o plano Premium."),
                     Ui.link("Conhecer o Premium", () -> ui.roteador().ir(Destino.PREMIUM))));
         }
     }
@@ -248,6 +318,7 @@ final class RelacionamentosTela extends TelaBase {
     @Override
     public void aoExibir() {
         atualizarAbas();
+        atualizarFiltroDeEtiqueta();
         carregar();
     }
 
@@ -272,12 +343,57 @@ final class RelacionamentosTela extends TelaBase {
     private ConsultaDeRelacionamentos consulta() {
         var inicio = desde.getValue() == null ? null : desde.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant();
         var fim = ate.getValue() == null ? null : ate.getValue().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().minusSeconds(1);
-        return new ConsultaDeRelacionamentos(visao, busca.getText(), ordem.getValue(), pagina, TAMANHO_DA_PAGINA, inicio, fim, somenteComData.isSelected());
+        Long etiqueta = filtroDeEtiqueta.getValue() == null ? null : filtroDeEtiqueta.getValue().id();
+        return new ConsultaDeRelacionamentos(visao, busca.getText(), ordem.getValue(), pagina, TAMANHO_DA_PAGINA, inicio, fim,
+                somenteComData.isSelected(), somenteFavoritas.isSelected(), etiqueta);
+    }
+
+    private record Carga(Pagina<ContaListada> pagina, Map<String, Anotacao> anotacoes) {
+    }
+
+    private void atualizarFiltroDeEtiqueta() {
+        Etiqueta escolhida = filtroDeEtiqueta.getValue();
+        List<Etiqueta> todas = ui.local().anotacoes().etiquetas();
+        filtroDeEtiqueta.getItems().setAll(todas);
+        filtroDeEtiqueta.setValue(escolhida != null && todas.stream().anyMatch(e -> e.id() == escolhida.id()) ? escolhida : null);
+    }
+
+    private String resumoDasAnotacoes(String usuario) {
+        Anotacao a = anotacoesVisiveis.get(usuario);
+        if (a == null) {
+            return "";
+        }
+        String etiquetas = a.etiquetas().stream().map(Etiqueta::nome).collect(java.util.stream.Collectors.joining(", "));
+        String nota = a.nota() == null || a.nota().isEmpty() ? "" : "nota";
+        return etiquetas.isEmpty() ? nota : nota.isEmpty() ? etiquetas : etiquetas + "  •  " + nota;
+    }
+
+    private void alternarFavorito(String usuario, boolean favorito) {
+        try {
+            ui.local().anotacoes().favoritar(usuario, favorito);
+        } catch (RuntimeException e) {
+            ui.notificador().erro(Mensagens.paraUsuario(e));
+            if (e instanceof br.com.instadino.nucleo.acesso.AcessoNegadoException) {
+                ui.roteador().ir(Destino.PREMIUM);
+            }
+            return;
+        }
+        carregar();
+    }
+
+    private void editarAnotacoes(String usuario) {
+        AnotacoesDialogo editor = new AnotacoesDialogo(ui, usuario);
+        editor.dialogo().showAndWait();
+        atualizarFiltroDeEtiqueta();
+        carregar();
     }
 
     private void carregar() {
         ConsultaDeRelacionamentos c = consulta();
-        Tarefas.executar(p -> ui.local().relacionamentos().consultar(c), this::mostrar, erro -> {
+        Tarefas.executar(p -> new Carga(ui.local().relacionamentos().consultar(c), ui.local().anotacoes().doPerfilAtivo()), carga -> {
+            anotacoesVisiveis = carga.anotacoes();
+            mostrar(carga.pagina());
+        }, erro -> {
             ui.notificador().erro(Mensagens.paraUsuario(erro));
             tabela.getItems().clear();
         });
@@ -290,6 +406,7 @@ final class RelacionamentosTela extends TelaBase {
             return;
         }
         tabela.getItems().setAll(resultado.itens());
+        tabela.refresh();
         tabela.scrollTo(0);
         contagem.setText(Formatos.inteiro(resultado.total()) + (resultado.total() == 1 ? " conta" : " contas"));
         int total = Math.max(resultado.totalDePaginas(), 1);

@@ -4,10 +4,11 @@ import java.time.Instant;
 
 /**
  * Parâmetros de uma consulta às listas. Busca e ordenação são do plano Free; o intervalo de datas e a opção
- * "somente com data" são filtros compostos (Premium).
+ * "somente com data" são filtros compostos (Premium). Filtrar por favoritas ou por etiqueta exige os recursos Favoritos
+ * e Etiquetas (Premium).
  */
 public record ConsultaDeRelacionamentos(VisaoDeRelacionamento visao, String busca, Ordenacao ordenacao, int pagina, int tamanho,
-                                        Instant desde, Instant ate, boolean somenteComData) {
+                                        Instant desde, Instant ate, boolean somenteComData, boolean somenteFavoritas, Long etiquetaId) {
 
     public enum Ordenacao { ALFABETICA, ALFABETICA_INVERSA, MAIS_RECENTES, MAIS_ANTIGOS }
 
@@ -23,28 +24,42 @@ public record ConsultaDeRelacionamentos(VisaoDeRelacionamento visao, String busc
         tamanho = Math.max(1, Math.min(tamanho, TAMANHO_MAXIMO_DE_PAGINA));
     }
 
+    /** Construtor sem os filtros de favoritos e etiqueta. */
+    public ConsultaDeRelacionamentos(VisaoDeRelacionamento visao, String busca, Ordenacao ordenacao, int pagina, int tamanho,
+                                     Instant desde, Instant ate, boolean somenteComData) {
+        this(visao, busca, ordenacao, pagina, tamanho, desde, ate, somenteComData, false, null);
+    }
+
     public static ConsultaDeRelacionamentos de(VisaoDeRelacionamento visao) {
         return new ConsultaDeRelacionamentos(visao, "", Ordenacao.ALFABETICA, 0, 100, null, null, false);
     }
 
     public ConsultaDeRelacionamentos comBusca(String texto) {
-        return new ConsultaDeRelacionamentos(visao, texto, ordenacao, 0, tamanho, desde, ate, somenteComData);
+        return new ConsultaDeRelacionamentos(visao, texto, ordenacao, 0, tamanho, desde, ate, somenteComData, somenteFavoritas, etiquetaId);
     }
 
     public ConsultaDeRelacionamentos comOrdenacao(Ordenacao nova) {
-        return new ConsultaDeRelacionamentos(visao, busca, nova, pagina, tamanho, desde, ate, somenteComData);
+        return new ConsultaDeRelacionamentos(visao, busca, nova, pagina, tamanho, desde, ate, somenteComData, somenteFavoritas, etiquetaId);
     }
 
     public ConsultaDeRelacionamentos naPagina(int nova) {
-        return new ConsultaDeRelacionamentos(visao, busca, ordenacao, nova, tamanho, desde, ate, somenteComData);
+        return new ConsultaDeRelacionamentos(visao, busca, ordenacao, nova, tamanho, desde, ate, somenteComData, somenteFavoritas, etiquetaId);
     }
 
     public ConsultaDeRelacionamentos comPeriodo(Instant novoDesde, Instant novoAte) {
-        return new ConsultaDeRelacionamentos(visao, busca, ordenacao, 0, tamanho, novoDesde, novoAte, somenteComData);
+        return new ConsultaDeRelacionamentos(visao, busca, ordenacao, 0, tamanho, novoDesde, novoAte, somenteComData, somenteFavoritas, etiquetaId);
     }
 
     public ConsultaDeRelacionamentos comSomenteComData(boolean valor) {
-        return new ConsultaDeRelacionamentos(visao, busca, ordenacao, 0, tamanho, desde, ate, valor);
+        return new ConsultaDeRelacionamentos(visao, busca, ordenacao, 0, tamanho, desde, ate, valor, somenteFavoritas, etiquetaId);
+    }
+
+    public ConsultaDeRelacionamentos somenteFavoritas(boolean valor) {
+        return new ConsultaDeRelacionamentos(visao, busca, ordenacao, 0, tamanho, desde, ate, somenteComData, valor, etiquetaId);
+    }
+
+    public ConsultaDeRelacionamentos comEtiqueta(Long id) {
+        return new ConsultaDeRelacionamentos(visao, busca, ordenacao, 0, tamanho, desde, ate, somenteComData, somenteFavoritas, id);
     }
 
     /** Verdadeiro se a consulta usa filtros que só o Premium oferece. */

@@ -66,6 +66,23 @@ public final class RepositorioDePerfis {
         return listar().stream().findFirst().orElseGet(() -> criar("Perfil principal", null));
     }
 
+    public void renomear(long id, String novoNome) {
+        String limpo = Objects.requireNonNull(novoNome, "nome").strip();
+        if (limpo.isEmpty() || limpo.length() > 100) {
+            throw new IllegalArgumentException("O nome do perfil deve ter entre 1 e 100 caracteres.");
+        }
+        banco.emTransacao(c -> {
+            try (PreparedStatement p = c.prepareStatement("UPDATE perfil_local SET nome = ? WHERE id = ?")) {
+                p.setString(1, limpo);
+                p.setLong(2, id);
+                if (p.executeUpdate() == 0) {
+                    throw new IllegalArgumentException("Perfil inexistente.");
+                }
+            }
+            return null;
+        });
+    }
+
     public void excluir(long id) {
         banco.emTransacao(c -> {
             try (PreparedStatement p = c.prepareStatement("DELETE FROM perfil_local WHERE id = ?")) {

@@ -109,6 +109,15 @@
 .botao-link { -fx-background-color: transparent; -fx-border-color: transparent; -fx-text-fill: -cor-acento; -fx-padding: 2 4 2 4; }
 .botao-link:hover { -fx-background-color: transparent; -fx-underline: true; }
 
+.botao-estrela { -fx-background-color: transparent; -fx-border-color: transparent; -fx-text-fill: -cor-suave; -fx-font-size: 16px; -fx-padding: 0 6 0 6; -fx-cursor: hand; }
+.botao-estrela:hover { -fx-text-fill: #f5c542; }
+.botao-estrela:focused { -fx-border-color: -cor-foco; -fx-border-radius: 6; }
+.estrela-marcada { -fx-text-fill: #f5c542; }
+
+.botao-perfil { -fx-background-color: transparent; -fx-border-color: -cor-borda; -fx-border-radius: 8; -fx-background-radius: 8; -fx-text-fill: -cor-suave; -fx-padding: 4 10 4 10; -fx-cursor: hand; }
+.botao-perfil:hover { -fx-text-fill: -cor-texto; -fx-border-color: -cor-acento; }
+.botao-perfil:focused { -fx-border-color: -cor-foco; -fx-border-width: 2; }
+
 .botao-aba {
     -fx-background-color: transparent; -fx-text-fill: -cor-suave; -fx-background-radius: 20; -fx-border-color: -cor-borda;
     -fx-border-radius: 20; -fx-padding: 6 14 6 14; -fx-cursor: hand;
