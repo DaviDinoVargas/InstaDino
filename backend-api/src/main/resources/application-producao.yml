@@ -1,0 +1,20 @@
+# Perfil de PRODUÇÃO. Todas as credenciais vêm do ambiente protegido; nada é versionado.
+# A inicialização é recusada se a configuração for insegura (ver AvaliadorDeConfiguracaoSegura).
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+
+server:
+  forward-headers-strategy: none
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+instadino:
+  semeadura:
+    habilitada: false
