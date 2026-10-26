@@ -32,12 +32,17 @@ class SemeaduraTest extends TesteBase {
     private static final Path ARQUIVO = Path.of(System.getProperty("java.io.tmpdir"), "instadino-semeadura-teste", "contas-semeadas.txt");
 
     private String senhaDoArquivo(String chave) throws Exception {
+        // o arquivo é acrescido a cada semeadura; vale a ÚLTIMA ocorrência (a das contas criadas nesta execução)
+        String encontrada = null;
         for (String linha : Files.readAllLines(ARQUIVO)) {
             if (linha.startsWith(chave)) {
-                return linha.split("\\|")[2].strip();
+                encontrada = linha.split("\\|")[2].strip();
             }
         }
-        throw new AssertionError("Conta não encontrada no arquivo: " + chave);
+        if (encontrada == null) {
+            throw new AssertionError("Conta não encontrada no arquivo: " + chave);
+        }
+        return encontrada;
     }
 
     private MvcResult login(String email, String senha) throws Exception {
