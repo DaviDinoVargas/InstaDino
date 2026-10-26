@@ -39,3 +39,15 @@ HTML: apenas links cujo endereço contém `instagram.com` são considerados; scr
 ## O que o programa NÃO afirma
 
 Ver `AnaliseDeSeguidores.LIMITACAO` e `ComparacaoDeImportacoes.LIMITACAO`: uma conta ausente numa lista não prova que deixou de seguir; diferenças entre exportações são observações, não eventos datados.
+
+## Descobertas com uma exportação real (2026-10-26)
+
+Validação feita pelo responsável do produto, que colou o diagnóstico por arquivo (estrutura e contagens, sem nomes):
+
+- **Exportação com intervalo de datas.** Uma exportação pedida com "último ano" trouxe `followers_1.json` com registros só dos últimos 12 meses (52 de 616 seguidores), enquanto `following.json` cobria desde 2018 (625 contas). O leitor não perdeu nada; o arquivo já vinha parcial. O importador agora detecta essa assinatura (uma lista cobrindo ~1 ano terminando na data da exportação e a outra com pelo menos 6 meses a mais), marca a lista como **possivelmente incompleta**, guarda o aviso com a importação e o mostra no painel, nas listas e nos relatórios PDF. É um indício, não uma prova.
+- **`label_values`.** Listas como `blocked_profiles.json` e `close_friends.json` usam `{fbid, label_values:[{label, value}...], media, timestamp}`; os rótulos mudam com o idioma, então o nome de usuário é procurado pelo endereço do perfil e, na falta dele, em rótulos que contenham "user"/"usu".
+- **Registro único na raiz.** `pending_follow_requests.json` é UM registro (`{timestamp, label_values:[...]}`), não uma lista; a raiz é lida como o próprio elemento.
+- `following.json` usa `{title:<usuário>, string_list_data:[{href, timestamp}]}` sem `value`.
+- Arquivos como `follow_requests_you've_received.json`, `recent_follow_requests.json` e `recently_unfollowed_profiles.json` são inventariados como "outras listas de relacionamentos" e ainda **não** são processados.
+
+Limitação: estas conclusões vêm de UMA exportação, em português. Outros idiomas e versões do Instagram podem diferir.

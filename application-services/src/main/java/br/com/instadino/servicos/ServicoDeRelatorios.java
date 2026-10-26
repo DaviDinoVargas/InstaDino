@@ -159,6 +159,7 @@ public final class ServicoDeRelatorios {
                 List.of("Seguidores que você não segue", numero(painel.voceNaoSegue())),
                 List.of("Proporção seguidores / seguidos", painel.proporcao() == null ? "indefinida" : String.format(Locale.forLanguageTag("pt-BR"), "%.2f", painel.proporcao()))),
                 new float[] {4, 1.5f});
+        painel.avisosDeCobertura().forEach(a -> pdf.paragrafo("ATENÇÃO: " + a));
         if (!painel.comparacaoDisponivel()) {
             pdf.nota("Uma das listas (seguidores ou seguidos) não estava na exportação; os indicadores que dependem dela não são confiáveis.");
         }

@@ -88,6 +88,7 @@ public final class ServicoDeImportacao {
             Map<String, Object> resumo = new LinkedHashMap<>();
             resumo.put("incompletas", resultado.categoriasIncompletas().stream().map(Enum::name).sorted().toList());
             resumo.put("avisos", resultado.avisos().size());
+            resumo.put("cobertura", resultado.avisosDeCobertura());
             return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(resumo);
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             return null;

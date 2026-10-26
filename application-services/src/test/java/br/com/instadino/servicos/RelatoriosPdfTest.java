@@ -248,4 +248,26 @@ class RelatoriosPdfTest {
         assertThat(eventos).extracting(e -> e.tipo()).contains("RELATORIO_PDF_GERADO");
         assertThat(eventos).filteredOn(e -> e.tipo().equals("RELATORIO_PDF_GERADO")).allMatch(e -> "importacao".equals(e.detalhe()));
     }
+
+    // ---- exportação feita com intervalo de datas ----
+
+    @Test
+    void avisoDeCoberturaParcialChegaAoPainelEAoRelatorio() throws IOException {
+        abrir();
+        long fim = 1_792_000_000L;
+        long dia = 86_400L;
+        var c = new ConstrutorDeExportacao();
+        c.arquivo("connections/followers_and_following/followers_1.json",
+                "[{\"title\":\"\",\"string_list_data\":[{\"href\":\"https://www.instagram.com/a\",\"value\":\"a\",\"timestamp\":" + (fim - 360 * dia)
+                        + "}]},{\"title\":\"\",\"string_list_data\":[{\"href\":\"https://www.instagram.com/b\",\"value\":\"b\",\"timestamp\":" + fim + "}]}]");
+        c.arquivo("connections/followers_and_following/following.json",
+                "{\"relationships_following\":[{\"title\":\"a\",\"string_list_data\":[{\"href\":\"https://www.instagram.com/a\",\"timestamp\":" + (fim - 2500 * dia)
+                        + "}]},{\"title\":\"c\",\"string_list_data\":[{\"href\":\"https://www.instagram.com/c\",\"timestamp\":" + fim + "}]}]}");
+        importar(c);
+        var painel = ctx.relacionamentos().painel().orElseThrow();
+        assertThat(painel.avisosDeCobertura()).hasSize(1);
+        assertThat(painel.avisosDeCobertura().get(0)).contains("possivelmente incompleta");
+        String t = texto(relatorio(ServicoDeRelatorios.Opcoes.padrao()));
+        assertThat(t).contains("ATENÇÃO").contains("cobre apenas");
+    }
 }

@@ -164,4 +164,59 @@ class DiagnosticoEFormatosTest {
         assertThat(inventario).contains("connections/followers_and_following/followers_1.json").contains("SEGUIDORES: 1 arquivo");
         assertThat(inventario).doesNotContain("fulano").doesNotContain("message_1");
     }
+
+    // ---- exportação com intervalo de datas ----
+
+    private static String seguidoresEm(long... instantes) {
+        StringBuilder j = new StringBuilder("[");
+        for (int i = 0; i < instantes.length; i++) {
+            j.append(i > 0 ? "," : "").append("{\"title\":\"\",\"string_list_data\":[{\"href\":\"https://www.instagram.com/u").append(i)
+                    .append("\",\"value\":\"u").append(i).append("\",\"timestamp\":").append(instantes[i]).append("}]}");
+        }
+        return j.append("]").toString();
+    }
+
+    private static String seguindoEm(long... instantes) {
+        StringBuilder j = new StringBuilder("{\"relationships_following\":[");
+        for (int i = 0; i < instantes.length; i++) {
+            j.append(i > 0 ? "," : "").append("{\"title\":\"s").append(i).append("\",\"string_list_data\":[{\"href\":\"https://www.instagram.com/s")
+                    .append(i).append("\",\"timestamp\":").append(instantes[i]).append("}]}");
+        }
+        return j.append("]}").toString();
+    }
+
+    private static final long DIA = 86_400L;
+    private static final long FIM = 1_792_000_000L; // referência arbitrária para a data da exportação
+
+    @Test
+    void seguidoresDeUmSoAnoComSeguidosDeVariosAnosGeramAvisoDeCoberturaParcial() {
+        var c = new ConstrutorDeExportacao();
+        c.arquivo("connections/followers_and_following/followers_1.json", seguidoresEm(FIM - 364 * DIA, FIM - 100 * DIA, FIM));
+        c.arquivo("connections/followers_and_following/following.json", seguindoEm(FIM - 2000 * DIA, FIM - 500 * DIA, FIM));
+        ResultadoDaImportacao r = importar(c);
+        assertThat(r.avisosDeCobertura()).hasSize(1);
+        assertThat(r.avisosDeCobertura().get(0)).contains("lista de seguidores cobre apenas").contains("possivelmente incompleta").contains("intervalo de datas");
+        assertThat(r.categoriasIncompletas()).contains(CategoriaDeDados.SEGUIDORES).doesNotContain(CategoriaDeDados.SEGUINDO);
+        assertThat(r.permiteComparacaoDeSeguidores()).isFalse();
+        assertThat(r.avisos()).anyMatch(a -> a.contains("cobre apenas"));
+    }
+
+    @Test
+    void contaNovaOuListasComMesmoPeriodoNaoGeramAviso() {
+        var nova = new ConstrutorDeExportacao();
+        nova.arquivo("connections/followers_and_following/followers_1.json", seguidoresEm(FIM - 300 * DIA, FIM));
+        nova.arquivo("connections/followers_and_following/following.json", seguindoEm(FIM - 320 * DIA, FIM));
+        assertThat(importar(nova).avisosDeCobertura()).isEmpty();
+        // seguidores que começaram tarde, mas por muito mais de um ano: não é a assinatura de um corte de um ano
+        var antiga = new ConstrutorDeExportacao();
+        antiga.arquivo("connections/followers_and_following/followers_1.json", seguidoresEm(FIM - 1500 * DIA, FIM));
+        antiga.arquivo("connections/followers_and_following/following.json", seguindoEm(FIM - 3000 * DIA, FIM));
+        assertThat(importar(antiga).avisosDeCobertura()).isEmpty();
+    }
+
+    @Test
+    void exportacaoSemDatasNaoGeraAvisoDeCobertura() {
+        ResultadoDaImportacao r = importar(new ConstrutorDeExportacao().seguidores("ana").seguindo("bruno"));
+        assertThat(r.avisosDeCobertura()).isEmpty();
+    }
 }

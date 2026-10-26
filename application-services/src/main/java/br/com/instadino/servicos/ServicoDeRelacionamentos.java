@@ -55,7 +55,23 @@ public final class ServicoDeRelacionamentos {
         boolean temAsDuas = !dados.getOrDefault(TipoDeRelacionamento.SEGUIDOR, List.of()).isEmpty()
                 && !dados.getOrDefault(TipoDeRelacionamento.SEGUINDO, List.of()).isEmpty();
         return Optional.of(new ResumoDoPainel(ultima.get(), r.totalSeguidores(), r.totalSeguindo(), r.mutuos().size(),
-                r.naoSeguemDeVolta().size(), r.voceNaoSegue().size(), r.proporcaoSeguidoresPorSeguindo(), temAsDuas));
+                r.naoSeguemDeVolta().size(), r.voceNaoSegue().size(), r.proporcaoSeguidoresPorSeguindo(), temAsDuas,
+                avisosDeCobertura(ultima.get().id())));
+    }
+
+    /** Avisos de cobertura guardados com a importação (por exemplo, exportação feita com intervalo de datas). */
+    private List<String> avisosDeCobertura(String importacaoId) {
+        try {
+            String bruto = importacoes.resumoJson(importacaoId);
+            if (bruto == null) {
+                return List.of();
+            }
+            List<String> avisos = new ArrayList<>();
+            new com.fasterxml.jackson.databind.ObjectMapper().readTree(bruto).path("cobertura").forEach(n -> avisos.add(n.asText()));
+            return avisos;
+        } catch (java.io.IOException e) {
+            return List.of();
+        }
     }
 
     public Pagina<ContaListada> consultar(ConsultaDeRelacionamentos consulta) {
