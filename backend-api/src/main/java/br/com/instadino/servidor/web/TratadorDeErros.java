@@ -40,7 +40,7 @@ class TratadorDeErros {
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(new ErroApi("TIPO_NAO_SUPORTADO", "Use application/json."));
     }
 
-    @ExceptionHandler(NoResourceFoundException.class)
+    @ExceptionHandler({NoResourceFoundException.class, org.springframework.web.servlet.NoHandlerFoundException.class})
     ResponseEntity<ErroApi> naoEncontrado(Exception e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErroApi("NAO_ENCONTRADO", "Recurso não encontrado."));
     }

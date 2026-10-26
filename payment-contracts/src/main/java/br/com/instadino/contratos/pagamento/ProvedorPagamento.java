@@ -18,6 +18,9 @@ public interface ProvedorPagamento {
 
     String nome();
 
+    /** Nome do cabeçalho HTTP que carrega a assinatura do webhook neste provedor. */
+    String cabecalhoDeAssinatura();
+
     /** Verdadeiro para provedores que nunca cobram de verdade. */
     boolean sandbox();
 
