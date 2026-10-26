@@ -44,8 +44,9 @@ final class PremiumTela extends TelaBase {
         RECURSOS.put(Funcionalidade.COMPARACAO_ENTRE_PERIODOS, new Recurso("Comparação entre períodos", true));
         RECURSOS.put(Funcionalidade.FILTROS_COMPOSTOS, new Recurso("Filtros compostos", true));
         RECURSOS.put(Funcionalidade.CSV_PERSONALIZADO, new Recurso("CSV personalizado", true));
-        RECURSOS.put(Funcionalidade.GRAFICOS_HISTORICOS, new Recurso("Gráficos históricos", false));
-        RECURSOS.put(Funcionalidade.RELATORIO_PDF, new Recurso("Relatórios em PDF", false));
+        RECURSOS.put(Funcionalidade.GRAFICOS_HISTORICOS, new Recurso("Gráficos históricos", true));
+        RECURSOS.put(Funcionalidade.RELATORIO_PDF, new Recurso("Relatórios em PDF", true));
+        RECURSOS.put(Funcionalidade.RELATORIOS_COMPARATIVOS, new Recurso("Relatório comparativo entre períodos", true));
         RECURSOS.put(Funcionalidade.FAVORITOS, new Recurso("Favoritos", true));
         RECURSOS.put(Funcionalidade.ETIQUETAS, new Recurso("Etiquetas", true));
         RECURSOS.put(Funcionalidade.NOTAS_PRIVADAS, new Recurso("Notas privadas", true));

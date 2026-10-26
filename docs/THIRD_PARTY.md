@@ -1,6 +1,6 @@
 # Componentes de terceiros
 
-Inventário das dependências **de execução** (escopo `runtime`) do aplicativo desktop e do backend, gerado em 2026-10-26 a partir dos POMs das próprias dependências (campo `licenses`, herdado do POM pai quando necessário). Dependências de teste e de build não são distribuídas e não constam aqui.
+Inventário das dependências **de execução** (escopo `runtime`) do aplicativo desktop e do backend, gerado em 2026-10-26 (atualizado com o PDFBox na Fase 4b) a partir dos POMs das próprias dependências (campo `licenses`, herdado do POM pai quando necessário). Dependências de teste e de build não são distribuídas e não constam aqui.
 
 > Este inventário é **informativo**. A revisão jurídica das licenças (especialmente MPL/EPL/LGPL e a redistribuição junto ao instalador) é responsabilidade do responsável pelo produto antes do primeiro release. Regenere a lista a cada mudança de dependência.
 
@@ -62,6 +62,10 @@ O JDK/JRE embutido no instalador (OpenJDK, GPLv2 com *Classpath Exception*) e o 
 | `org.hibernate.orm:hibernate-core` | 6.6.53.Final | GNU Library General Public License v2.1 or later | backend |
 | `org.hibernate.validator:hibernate-validator` | 8.0.3.Final | Apache License 2.0 | backend |
 | `org.jboss.logging:jboss-logging` | 3.6.3.Final | Apache License 2.0 | backend |
+| `org.apache.pdfbox:pdfbox` | 3.0.8 | Apache License, Version 2.0 | desktop |
+| `org.apache.pdfbox:pdfbox-io` | 3.0.8 | Apache License, Version 2.0 | desktop |
+| `org.apache.pdfbox:fontbox` | 3.0.8 | Apache License, Version 2.0 | desktop |
+| `commons-logging:commons-logging` | 1.4.0 | Apache License, Version 2.0 | desktop |
 | `org.jsoup:jsoup` | 1.23.2 | The MIT License | desktop |
 | `org.jspecify:jspecify` | 1.0.0 | The Apache License, Version 2.0 | backend |
 | `org.openjfx:javafx-base` | 21.0.13 | GPLv2+CE | desktop |

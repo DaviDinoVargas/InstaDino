@@ -40,6 +40,7 @@ public final class ContextoLocal implements AutoCloseable {
     private final ServicoDeDados dados;
     private final ServicoDeAnotacoes anotacoes;
     private final ServicoDePerfis servicoDePerfis;
+    private final ServicoDeRelatorios relatorios;
     private final RepositorioDeConsentimentos consentimentos;
     private final RepositorioDePreferencias preferencias;
     private final RepositorioDePerfis perfis;
@@ -72,6 +73,7 @@ public final class ContextoLocal implements AutoCloseable {
         this.importacao = new ServicoDeImportacao(limites, politica, repoImportacoes, perfis, auditoria, aoAlterar);
         this.historico = new ServicoDeHistorico(politica, repoImportacoes, sessao, auditoria, aoAlterar);
         this.exportacao = new ServicoDeExportacao(politica, relacionamentos, auditoria);
+        this.relatorios = new ServicoDeRelatorios(politica, relacionamentos, historico, anotacoes, servicoDePerfis, auditoria);
         this.dados = new ServicoDeDados(politica, this, repoImportacoes, perfis, eventos, auditoria);
     }
 
@@ -173,6 +175,10 @@ public final class ContextoLocal implements AutoCloseable {
 
     public ServicoDeExportacao exportacao() {
         return exportacao;
+    }
+
+    public ServicoDeRelatorios relatorios() {
+        return relatorios;
     }
 
     public ServicoDeAnotacoes anotacoes() {
