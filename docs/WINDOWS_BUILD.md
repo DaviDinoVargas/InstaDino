@@ -38,7 +38,7 @@ Os artefatos publicados chamam-se `…-NAO-ASSINADO`.
 ## Instalação, atualização e desinstalação
 
 - Instalação **por usuário** em `%LOCALAPPDATA%\InstaDino` (não exige administrador).
-- Dados do usuário em `%LOCALAPPDATA%\InstaDinoDados` (banco cifrado, chave protegida por DPAPI, cache da conta). **Ficam fora da pasta do programa**, então desinstalar não apaga os dados (verificado no CI). Para remover tudo use a função “Excluir meus dados” do aplicativo antes de desinstalar.
+- Dados do usuário em `%LOCALAPPDATA%\InstaDinoDados` (banco cifrado, chave protegida por DPAPI, cache da conta). **Ficam fora da pasta do programa**, então desinstalar não apaga os dados (verificado no CI). Para remover tudo use “Excluir todos os dados locais” na tela de Segurança do aplicativo antes de desinstalar.
 - **Não há atualização automática.** Um atualizador automático é um canal de distribuição de código e só será adicionado junto com um canal assinado e verificável. Por ora, baixe o novo instalador e instale por cima.
 
 ## Segredos de assinatura
