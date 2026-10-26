@@ -10,13 +10,17 @@
   </parent>
   <artifactId>analytics-engine</artifactId>
   <name>InstaDino - Motor de análise</name>
-  <description>Comparações de conjuntos, estatísticas sociais e exportação CSV</description>
+  <description>Comparações de conjuntos, estatísticas sociais e exportação CSV e relatórios PDF</description>
 
   <dependencies>
     <dependency>
       <groupId>br.com.instadino</groupId>
       <artifactId>application-core</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>pdfbox</artifactId>
     </dependency>
   </dependencies>
 </project>
