@@ -8,6 +8,8 @@ import br.com.instadino.persistencia.repositorio.RepositorioDeEventosDeSeguranca
 import br.com.instadino.persistencia.repositorio.RepositorioDeImportacoes;
 import br.com.instadino.persistencia.repositorio.RepositorioDePerfis;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -24,9 +26,11 @@ public final class ServicoDeDados {
     private final RepositorioDeImportacoes importacoes;
     private final RepositorioDePerfis perfis;
     private final RepositorioDeEventosDeSeguranca eventos;
+    private final RegistroDeAuditoriaLocal auditoria;
 
     ServicoDeDados(PoliticaDeAcesso politica, ContextoLocal contexto, RepositorioDeImportacoes importacoes,
-                   RepositorioDePerfis perfis, RepositorioDeEventosDeSeguranca eventos) {
+                   RepositorioDePerfis perfis, RepositorioDeEventosDeSeguranca eventos, RegistroDeAuditoriaLocal auditoria) {
+        this.auditoria = auditoria;
         this.politica = politica;
         this.contexto = contexto;
         this.importacoes = importacoes;
@@ -66,5 +70,28 @@ public final class ServicoDeDados {
     public void excluirTodosOsDados() {
         politica.exigir(Funcionalidade.EXCLUSAO_DE_DADOS);
         contexto.excluirTudo();
+    }
+
+    /**
+     * Cria um backup portátil protegido por senha (Premium). O arquivo só abre com a senha, em qualquer computador;
+     * sem ela ninguém recupera os dados, nem mesmo o aplicativo. A senha informada é zerada.
+     */
+    public void criarBackup(Path destino, char[] senha) {
+        try {
+            politica.exigir(Funcionalidade.BACKUP_PROTEGIDO);
+        } catch (RuntimeException e) {
+            Arrays.fill(senha, '\0');
+            throw e;
+        }
+        contexto.criarBackupComSenha(destino, senha);
+        auditoria.registrar("BACKUP_CRIADO", null);
+    }
+
+    /**
+     * Restaura um backup com senha, substituindo TODOS os dados locais. Não exige Premium: recuperar os próprios dados
+     * nunca é bloqueado por plano. Depois do sucesso o aplicativo precisa ser reiniciado.
+     */
+    public void restaurarBackup(Path arquivo, char[] senha) {
+        contexto.restaurarBackupComSenha(arquivo, senha);
     }
 }
