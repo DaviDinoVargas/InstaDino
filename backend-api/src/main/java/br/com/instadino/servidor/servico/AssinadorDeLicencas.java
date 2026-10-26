@@ -52,7 +52,7 @@ public class AssinadorDeLicencas {
             } else if (ambiente.acceptsProfiles(Profiles.of("producao"))) {
                 throw new IllegalStateException("A chave privada de assinatura de licenças é obrigatória em produção.");
             } else {
-                KeyPair par = ambiente.acceptsProfiles(Profiles.of("desenvolvimento")) ? chaveDeDesenvolvimento(propriedades.dados()) : gerar();
+                KeyPair par = ambiente.acceptsProfiles(Profiles.of("desenvolvimento")) ? chaveDeDesenvolvimento(propriedades.dados(), kid) : gerar();
                 this.privada = par.getPrivate();
                 this.publica = par.getPublic();
             }
@@ -87,10 +87,11 @@ public class AssinadorDeLicencas {
         return KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
     }
 
-    private static KeyPair chaveDeDesenvolvimento(Path dados) throws IOException, GeneralSecurityException {
+    private static KeyPair chaveDeDesenvolvimento(Path dados, String kid) throws IOException, GeneralSecurityException {
         Path pasta = dados.resolve("chaves-dev");
-        Path privadaPem = pasta.resolve("licenca-dev.key");
-        Path publicaPem = pasta.resolve("licenca-dev.pub");
+        // o desktop de desenvolvimento procura "<kid>.pub" na pasta indicada em INSTADINO_CHAVES_CONFIAVEIS
+        Path privadaPem = pasta.resolve(kid + ".key");
+        Path publicaPem = pasta.resolve(kid + ".pub");
         KeyFactory fabrica = KeyFactory.getInstance("Ed25519");
         if (Files.isRegularFile(privadaPem) && Files.isRegularFile(publicaPem)) {
             PrivateKey priv = lerChavePrivada(privadaPem);
