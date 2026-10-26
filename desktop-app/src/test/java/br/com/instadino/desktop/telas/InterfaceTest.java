@@ -128,6 +128,9 @@ class InterfaceTest {
         FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Processar").fire());
         FxTeste.esperar(() -> FxTeste.botao(raiz(), "Confirmar e salvar") != null, "resumo");
         assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Nada foi gravado ainda"))).isTrue();
+        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Diagnóstico por arquivo"))).isTrue();
+        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "followers_1.json"))).isTrue();
+        assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Copiar diagnóstico"))).isNotNull();
         FxTeste.capturar(raiz(), "04-importacao-resumo");
         assertThat(local.historico().listar()).isEmpty();
 

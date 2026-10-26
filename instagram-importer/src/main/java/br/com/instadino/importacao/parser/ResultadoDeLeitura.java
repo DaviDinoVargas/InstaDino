@@ -10,6 +10,7 @@ public final class ResultadoDeLeitura {
 
     private final Map<NomeDeUsuario, Long> usuarios = new LinkedHashMap<>();
     private final Map<String, Integer> invalidosPorMotivo = new TreeMap<>();
+    private final Map<String, Integer> formas = new TreeMap<>();
     private int lidos;
     private int duplicados;
 
@@ -26,6 +27,15 @@ public final class ResultadoDeLeitura {
         }
     }
 
+    /** Registra a forma (apenas nomes de chaves) de um elemento; guarda no máximo 12 formas distintas. */
+    void registrarForma(String forma) {
+        if (formas.containsKey(forma) || formas.size() < 12) {
+            formas.merge(forma, 1, Integer::sum);
+        } else {
+            formas.merge("(outras formas)", 1, Integer::sum);
+        }
+    }
+
     void rejeitar(String motivo) {
         lidos++;
         invalidosPorMotivo.merge(motivo, 1, Integer::sum);
@@ -38,6 +48,10 @@ public final class ResultadoDeLeitura {
 
     public Map<String, Integer> invalidosPorMotivo() {
         return invalidosPorMotivo;
+    }
+
+    public Map<String, Integer> formas() {
+        return formas;
     }
 
     public int registrosLidos() {
