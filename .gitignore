@@ -58,3 +58,8 @@ dados-locais/
 
 # Relatórios gerados
 dependency-check-report.*
+
+# Dados do backend de desenvolvimento (bancos, chaves de teste, e-mails simulados)
+dados-backend/
+chaves-dev/
+emails-simulados/
