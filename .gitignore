@@ -1,0 +1,60 @@
+# Build
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+dist/
+out/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+nbproject/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Segredos e credenciais (nunca versionar)
+.env
+.env.*
+!.env.exemplo
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+segredos/
+credenciais/
+contas-semeadas*.txt
+
+# Dados locais e pessoais
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.db-journal
+*.bak
+*.dump
+*.log
+logs/
+tmp/
+temp/
+dados-locais/
+
+# Exportações reais do Instagram (apenas fixtures sintéticas são permitidas)
+*.zip
+!shared-test-fixtures/src/main/resources/**/*.zip
+
+# Relatórios gerados
+dependency-check-report.*
