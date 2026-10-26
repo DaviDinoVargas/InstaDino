@@ -50,13 +50,26 @@ public final class LeitorDeRelacionamentos {
                 lerLista(p, resultado, cancelamento);
             } else if (inicio == JsonToken.START_OBJECT) {
                 boolean encontrouLista = false;
+                // Alguns arquivos (por exemplo, uma única solicitação pendente) são UM registro na raiz, com
+                // label_values ou string_list_data; nesse caso a própria raiz é o elemento.
+                com.fasterxml.jackson.databind.node.ObjectNode registroDaRaiz = MAPPER.createObjectNode();
                 while (p.nextToken() == JsonToken.FIELD_NAME) {
-                    if (p.nextToken() == JsonToken.START_ARRAY) {
+                    String campo = p.currentName();
+                    JsonToken valor = p.nextToken();
+                    if (valor == JsonToken.START_ARRAY && ("label_values".equals(campo) || "string_list_data".equals(campo))) {
+                        registroDaRaiz.set(campo, MAPPER.readTree(p));
+                    } else if (valor == JsonToken.START_ARRAY) {
                         encontrouLista = true;
                         lerLista(p, resultado, cancelamento);
+                    } else if (valor != null && valor.isScalarValue() && ("timestamp".equals(campo) || "title".equals(campo))) {
+                        registroDaRaiz.set(campo, MAPPER.readTree(p));
                     } else {
                         p.skipChildren();
                     }
+                }
+                if (registroDaRaiz.has("label_values") || registroDaRaiz.has("string_list_data")) {
+                    encontrouLista = true;
+                    processarElemento(registroDaRaiz, resultado);
                 }
                 if (!encontrouLista) {
                     throw new IOException("Estrutura sem lista de registros.");

@@ -11,11 +11,17 @@ public final class ResultadoDeLeitura {
     private final Map<NomeDeUsuario, Long> usuarios = new LinkedHashMap<>();
     private final Map<String, Integer> invalidosPorMotivo = new TreeMap<>();
     private final Map<String, Integer> formas = new TreeMap<>();
+    private Long primeiroInstante;
+    private Long ultimoInstante;
     private int lidos;
     private int duplicados;
 
     void aceitar(NomeDeUsuario usuario, Long instante) {
         lidos++;
+        if (instante != null) {
+            primeiroInstante = primeiroInstante == null ? instante : Math.min(primeiroInstante, instante);
+            ultimoInstante = ultimoInstante == null ? instante : Math.max(ultimoInstante, instante);
+        }
         Long existente = usuarios.get(usuario);
         if (usuarios.containsKey(usuario)) {
             duplicados++;
@@ -48,6 +54,15 @@ public final class ResultadoDeLeitura {
 
     public Map<String, Integer> invalidosPorMotivo() {
         return invalidosPorMotivo;
+    }
+
+    /** Menor carimbo de tempo (segundos) visto nos registros aceitos, ou nulo. */
+    public Long primeiroInstante() {
+        return primeiroInstante;
+    }
+
+    public Long ultimoInstante() {
+        return ultimoInstante;
     }
 
     public Map<String, Integer> formas() {
