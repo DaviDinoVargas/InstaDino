@@ -64,3 +64,54 @@ jobs:
             dist/*.zip
             dist/SHA256SUMS.txt
           if-no-files-found: error
+
+  # EXPERIMENTAL: valida instalação, execução e desinstalação reais do MSI não assinado em máquina Windows.
+  # Não impede o restante do fluxo; o resultado fica visível nos passos deste job.
+  instalador-msi:
+    name: Instalador MSI (instalar, executar, desinstalar)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Gerar o MSI (não assinado)
+        shell: pwsh
+        run: scripts/empacotar-windows.ps1 -Tipo msi
+      - name: Instalar em silêncio
+        shell: pwsh
+        run: |
+          $msi = (Get-ChildItem dist -Filter 'InstaDino-*.msi' | Select-Object -First 1).FullName
+          $p = Start-Process msiexec.exe -ArgumentList '/i', "`"$msi`"", '/qn', '/l*v', 'instalacao.log' -Wait -PassThru
+          Write-Host "msiexec /i terminou com código $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "Instalação falhou (código $($p.ExitCode))." }
+          $exe = Join-Path $env:LOCALAPPDATA 'InstaDino\InstaDino.exe'
+          if (-not (Test-Path $exe)) { throw "Executável não encontrado após a instalação: $exe" }
+          Write-Host "Instalado em $exe"
+      - name: Teste de fumaça do aplicativo instalado
+        shell: pwsh
+        run: scripts/testar-pacote-windows.ps1 -Executavel (Join-Path $env:LOCALAPPDATA 'InstaDino\InstaDino.exe')
+      - name: Desinstalar e conferir que nada ficou
+        shell: pwsh
+        run: |
+          $msi = (Get-ChildItem dist -Filter 'InstaDino-*.msi' | Select-Object -First 1).FullName
+          $p = Start-Process msiexec.exe -ArgumentList '/x', "`"$msi`"", '/qn', '/l*v', 'desinstalacao.log' -Wait -PassThru
+          Write-Host "msiexec /x terminou com código $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "Desinstalação falhou (código $($p.ExitCode))." }
+          if (Test-Path (Join-Path $env:LOCALAPPDATA 'InstaDino\InstaDino.exe')) { throw 'O executável continua instalado.' }
+          Write-Host 'Desinstalado.'
+      - name: Resumir falhas como anotações
+        if: failure()
+        shell: pwsh
+        run: |
+          foreach ($log in 'instalacao.log', 'desinstalacao.log') {
+            if (Test-Path $log) {
+              $erros = (Select-String -Path $log -Pattern 'Error|erro|return value 3' | Select-Object -First 8 | ForEach-Object { $_.Line.Trim() }) -join ' | '
+              if ($erros.Length -gt 1400) { $erros = $erros.Substring(0, 1400) }
+              if ($erros) { Write-Host "::error title=$log::$($erros -replace '[\r%]', ' ')" }
+            }
+          }

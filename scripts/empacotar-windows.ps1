@@ -1,13 +1,13 @@
 ﻿<#
 .SYNOPSIS
-  Gera o aplicativo InstaDino para Windows com jpackage (app-image, ZIP e, se o WiX estiver instalado, instalador EXE).
+  Gera o aplicativo InstaDino para Windows com jpackage (app-image, ZIP e, se o WiX estiver instalado, instalador EXE ou MSI).
 .DESCRIPTION
   Requisitos: Windows 10/11 x64, JDK 21 (jpackage e jdeps no PATH), Maven 3.9+.
-  O instalador (-Tipo exe) exige o WiX Toolset 3.x (candle.exe/light.exe no PATH).
+  Os instaladores (-Tipo exe ou msi) exigem o WiX Toolset 3.x (candle.exe/light.exe no PATH ou na pasta padrão de instalação).
   A assinatura de código é OPCIONAL e usa SOMENTE variáveis de ambiente (veja docs/WINDOWS_BUILD.md).
   Nenhum certificado, senha ou token faz parte do repositório.
 .PARAMETER Tipo
-  app-image (padrão) ou exe.
+  app-image (padrão), exe ou msi.
 .PARAMETER Versao
   Versão numérica (ex.: 0.1.0). Padrão: versão do POM sem -SNAPSHOT.
 .PARAMETER Assinar
@@ -15,7 +15,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('app-image', 'exe')][string]$Tipo = 'app-image',
+    [ValidateSet('app-image', 'exe', 'msi')][string]$Tipo = 'app-image',
     [string]$Versao,
     [switch]$Assinar
 )
@@ -66,23 +66,27 @@ $zip = Join-Path $destino "InstaDino-$Versao-windows-x64.zip"
 Compress-Archive -Path (Join-Path $destino 'InstaDino') -DestinationPath $zip -CompressionLevel Optimal
 
 $artefatos = @($zip)
-if ($Tipo -eq 'exe') {
+if ($Tipo -ne 'app-image') {
     if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
-        throw 'O instalador EXE exige o WiX Toolset 3.x (candle.exe) no PATH. Use -Tipo app-image ou instale o WiX.'
+        $wix = Get-ChildItem "${env:ProgramFiles(x86)}\WiX Toolset v3*\bin" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($wix) { $env:PATH = "$($wix.FullName);$env:PATH" }
+    }
+    if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
+        throw "O instalador ($Tipo) exige o WiX Toolset 3.x (candle.exe). Use -Tipo app-image ou instale o WiX."
     }
     $instalacao = @(
-        '--type', 'exe', '--win-menu', '--win-shortcut', '--win-per-user-install', '--win-dir-chooser',
+        '--type', $Tipo, '--win-menu', '--win-shortcut', '--win-per-user-install', '--win-dir-chooser',
         '--win-upgrade-uuid', 'b7205170-def6-4bba-b5ef-afaf40836b5a'
     )
     Executar jpackage ($instalacao + $comuns)
-    $artefatos += (Get-ChildItem $destino -Filter '*.exe' | Where-Object { $_.Name -like 'InstaDino-*' }).FullName
+    $artefatos += (Get-ChildItem $destino -Filter "InstaDino-*.$Tipo").FullName
 }
 
 if ($Assinar) {
     if (-not $env:INSTADINO_CERT_PFX -or -not $env:INSTADINO_CERT_SENHA) {
         throw 'Para assinar, defina INSTADINO_CERT_PFX (caminho do .pfx) e INSTADINO_CERT_SENHA no ambiente. Nada é lido do repositório.'
     }
-    $alvos = @(Join-Path $destino 'InstaDino\InstaDino.exe') + @($artefatos | Where-Object { $_ -like '*.exe' })
+    $alvos = @(Join-Path $destino 'InstaDino\InstaDino.exe') + @($artefatos | Where-Object { $_ -like '*.exe' -or $_ -like '*.msi' })
     foreach ($alvo in $alvos) {
         Executar signtool @('sign', '/fd', 'SHA256', '/tr', 'http://timestamp.digicert.com', '/td', 'SHA256', '/f', $env:INSTADINO_CERT_PFX, '/p', $env:INSTADINO_CERT_SENHA, $alvo)
         Executar signtool @('verify', '/pa', $alvo)
