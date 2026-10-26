@@ -414,6 +414,10 @@ final class RelacionamentosTela extends TelaBase {
         anterior.setDisable(resultado.pagina() == 0);
         proxima.setDisable(resultado.pagina() + 1 >= resultado.totalDePaginas());
         avisoLimitacao.getChildren().clear();
+        if (visao != VisaoDeRelacionamento.SEGUINDO) {
+            ui.local().relacionamentos().painel().ifPresent(p -> p.avisosDeCobertura()
+                    .forEach(aviso -> avisoLimitacao.getChildren().add(Ui.caixa(Ui.Tipo.AVISO, aviso))));
+        }
         if (visao == VisaoDeRelacionamento.NAO_SEGUEM_DE_VOLTA || visao == VisaoDeRelacionamento.VOCE_NAO_SEGUE) {
             avisoLimitacao.getChildren().add(Ui.caixa(Ui.Tipo.AVISO, AnaliseDeSeguidores.LIMITACAO));
         }

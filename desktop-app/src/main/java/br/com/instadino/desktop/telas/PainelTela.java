@@ -50,6 +50,9 @@ final class PainelTela extends TelaBase {
         ((VBox) linha.getChildren().get(1)).setMaxWidth(380);
 
         corpo(metricas, linha, Ui.caixa(Ui.Tipo.AVISO, AnaliseDeSeguidores.LIMITACAO), atalhos());
+        for (String aviso : p.avisosDeCobertura()) {
+            pagina.getChildren().add(1, Ui.caixa(Ui.Tipo.AVISO, aviso));
+        }
         if (!p.comparacaoDisponivel()) {
             pagina.getChildren().add(1, Ui.caixa(Ui.Tipo.AVISO,
                     "A lista de seguidores ou a de contas seguidas não foi encontrada ou veio vazia. Os indicadores de comparação podem não refletir a realidade."));

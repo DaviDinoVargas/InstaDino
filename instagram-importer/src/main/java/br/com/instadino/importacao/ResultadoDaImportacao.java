@@ -30,7 +30,8 @@ public record ResultadoDaImportacao(
         Map<String, Integer> invalidosPorMotivo,
         List<String> avisos,
         Duration duracao,
-        List<DiagnosticoDeArquivo> diagnosticos) {
+        List<DiagnosticoDeArquivo> diagnosticos,
+        List<String> avisosDeCobertura) {
 
     public ResultadoDaImportacao {
         relacionamentos = copiar(relacionamentos);
@@ -39,6 +40,7 @@ public record ResultadoDaImportacao(
         invalidosPorMotivo = Map.copyOf(new TreeMap<>(invalidosPorMotivo));
         avisos = List.copyOf(avisos);
         diagnosticos = List.copyOf(diagnosticos);
+        avisosDeCobertura = List.copyOf(avisosDeCobertura);
     }
 
     private static Map<TipoDeRelacionamento, List<Relacionamento>> copiar(Map<TipoDeRelacionamento, List<Relacionamento>> origem) {

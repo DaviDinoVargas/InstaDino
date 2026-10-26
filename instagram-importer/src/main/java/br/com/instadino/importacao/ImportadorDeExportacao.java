@@ -32,7 +32,7 @@ import java.util.zip.ZipFile;
  */
 public final class ImportadorDeExportacao {
 
-    public static final String VERSAO_DO_PARSER = "1.2.0";
+    public static final String VERSAO_DO_PARSER = "1.3.0";
 
     private static final Map<CategoriaDeDados, TipoDeRelacionamento> TIPOS = new EnumMap<>(CategoriaDeDados.class);
 
@@ -163,15 +163,61 @@ public final class ImportadorDeExportacao {
                 avisos.add("A categoria \"" + sensivel.rotulo() + "\" está presente, mas não foi autorizada e não foi processada.");
             }
         }
+        List<String> cobertura = new ArrayList<>();
+        for (CategoriaDeDados parcial : List.of(CategoriaDeDados.SEGUIDORES, CategoriaDeDados.SEGUINDO)) {
+            CategoriaDeDados outra = parcial == CategoriaDeDados.SEGUIDORES ? CategoriaDeDados.SEGUINDO : CategoriaDeDados.SEGUIDORES;
+            avaliarCobertura(diagnosticos, parcial, outra).ifPresent(texto -> {
+                cobertura.add(texto);
+                avisos.add(texto);
+                incompletas.add(parcial);
+            });
+        }
         for (CategoriaDeDados c : incompletas) {
             avisos.add("A lista \"" + c.rotulo() + "\" pode estar incompleta; comparações que dependem dela devem ser interpretadas com cautela.");
         }
         return new ResultadoDaImportacao(VERSAO_DO_PARSER, inventario, relacionamentos, processadas, incompletas, validos,
-                invalidos, duplicados, invalidosPorMotivo, avisos, inicio.decorrido(), diagnosticos);
+                invalidos, duplicados, invalidosPorMotivo, avisos, inicio.decorrido(), diagnosticos, cobertura);
     }
 
     private static DiagnosticoDeArquivo erroDeArquivo(EntradaInventariada alvo, String motivo) {
         return new DiagnosticoDeArquivo(DiagnosticoDeArquivo.caminhoSemRaiz(alvo.caminho()), alvo.categoria(), alvo.tamanhoDeclarado(),
                 0, 0, 0, Map.of(), Map.of(), null, null, motivo);
+    }
+
+    private static final long DIA = 86_400L;
+    private static final java.time.format.DateTimeFormatter DATA_BR = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    /**
+     * Detecta a assinatura de uma exportação feita com intervalo de datas: a lista {@code parcial} cobre só cerca de um
+     * ano que termina na data da própria exportação, enquanto a lista {@code outra} cobre pelo menos seis meses a mais.
+     * É um indício, não uma prova: por isso o texto fala em "possivelmente" e a lista é marcada como incompleta.
+     */
+    static java.util.Optional<String> avaliarCobertura(List<DiagnosticoDeArquivo> diagnosticos, CategoriaDeDados parcial, CategoriaDeDados outra) {
+        Long minParcial = menor(diagnosticos, parcial);
+        Long minOutra = menor(diagnosticos, outra);
+        Long fim = diagnosticos.stream().map(DiagnosticoDeArquivo::ultimoInstante).filter(java.util.Objects::nonNull).max(Long::compare).orElse(null);
+        if (minParcial == null || minOutra == null || fim == null) {
+            return java.util.Optional.empty();
+        }
+        long janela = fim - minParcial;
+        boolean periodoDeUmAno = janela >= 300 * DIA && janela <= 400 * DIA;
+        boolean outraVaiMuitoAntes = minParcial - minOutra > 180 * DIA;
+        if (!periodoDeUmAno || !outraVaiMuitoAntes) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.of("A lista de " + parcial.rotulo().toLowerCase(java.util.Locale.ROOT) + " cobre apenas de " + data(minParcial) + " a "
+                + data(fim) + ", enquanto a de " + outra.rotulo().toLowerCase(java.util.Locale.ROOT) + " cobre desde " + data(minOutra)
+                + ". Isso costuma acontecer quando a exportação é pedida com um intervalo de datas (por exemplo, \"último ano\"). "
+                + "Esta lista está possivelmente incompleta, então totais, mútuos e não recíprocos podem estar subestimados. "
+                + "Peça ao Instagram uma nova exportação que inclua todo o período.");
+    }
+
+    private static Long menor(List<DiagnosticoDeArquivo> diagnosticos, CategoriaDeDados categoria) {
+        return diagnosticos.stream().filter(d -> d.categoria() == categoria).map(DiagnosticoDeArquivo::primeiroInstante)
+                .filter(java.util.Objects::nonNull).min(Long::compare).orElse(null);
+    }
+
+    private static String data(long segundos) {
+        return DATA_BR.format(java.time.LocalDate.ofInstant(java.time.Instant.ofEpochSecond(segundos), java.time.ZoneOffset.UTC));
     }
 }
