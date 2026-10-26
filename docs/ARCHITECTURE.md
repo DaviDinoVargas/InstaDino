@@ -47,7 +47,7 @@ Dependências são acíclicas e `desktop-app` não acessa SQLite diretamente: us
 
 | ADR | Decisão |
 |---|---|
-| 0001 | Java 21 LTS, JavaFX 25, Maven multimódulo |
+| 0001 | Java 21 LTS, JavaFX 21.0.13 (LTS), Maven multimódulo |
 | 0002 | SQLite com SQLite3 Multiple Ciphers (`io.github.willena:sqlite-jdbc`); chave aleatória protegida por DPAPI via JNA |
 | 0003 | Backend Spring Boot 3.5.x; PostgreSQL em produção, H2 em testes, migrações Flyway |
 | 0004 | Senhas com Argon2id (Spring Security); sessões com token opaco armazenado como hash |
