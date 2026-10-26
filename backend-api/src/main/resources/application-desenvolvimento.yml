@@ -1,0 +1,24 @@
+# Perfil de DESENVOLVIMENTO / sandbox local. Nunca use em produção.
+spring:
+  datasource:
+    url: jdbc:h2:file:${instadino.dados}/banco;AUTO_SERVER=FALSE
+    username: sa
+    password: ""
+  h2:
+    console:
+      enabled: false
+
+server:
+  # somente a máquina local; TLS é dispensado apenas para o cliente em loopback
+  address: 127.0.0.1
+  port: ${INSTADINO_PORTA:8443}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+instadino:
+  semeadura:
+    habilitada: ${INSTADINO_SEMEADURA:true}
