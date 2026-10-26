@@ -33,6 +33,9 @@ class ConsultasParametrizadasTest {
                     if (argumento.strip().equals("comando")) {
                         continue; // comandos fixos de migração, carregados de arquivos versionados e com checksum
                     }
+                    if (argumento.strip().equals("pragmaDeChave") && codigo.contains("HEX_DE_CHAVE.matcher(hexNovo).matches()")) {
+                        continue; // PRAGMA hexrekey não aceita parâmetros; o valor é validado como 64 dígitos hexadecimais
+                    }
                     if (CONCATENA_VARIAVEL.matcher(argumento).find()) {
                         int linha = codigo.substring(0, chamadas.start()).split("\n", -1).length;
                         violacoes.add(arquivo + ":" + linha + " -> " + argumento.strip());

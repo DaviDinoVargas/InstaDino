@@ -273,6 +273,30 @@ class InterfaceTest {
     }
 
     @Test
+    void backupProtegidoEstaBloqueadoNoFreeMasARestauracaoContinuaLivre() {
+        abrir();
+        ir(Destino.SEGURANCA);
+        FxTeste.esperar(() -> FxTeste.botao(raiz(), "Criar backup…") != null, "cartão de backup");
+        assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Criar backup…").isDisabled())).isTrue();
+        assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Restaurar backup…").isDisabled())).isFalse();
+        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Backup protegido por senha (Premium)"))).isTrue();
+        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Restaurar um backup seu é sempre gratuito"))).isTrue();
+    }
+
+    @Test
+    void backupProtegidoFicaDisponivelNoPremium() {
+        licenca.set(new EstadoDaLicenca(Plano.PREMIUM, SituacaoDaLicenca.ATIVA));
+        abrir();
+        ir(Destino.SEGURANCA);
+        FxTeste.esperar(() -> FxTeste.botao(raiz(), "Criar backup…") != null, "cartão de backup");
+        assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Criar backup…").isDisabled())).isFalse();
+        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Guarde a senha em um lugar seguro"))).isTrue();
+        FxTeste.naInterface(() -> FxTeste.todos(raiz()).stream().filter(n -> n instanceof javafx.scene.control.ScrollPane)
+                .forEach(n -> ((javafx.scene.control.ScrollPane) n).setVvalue(1.0)));
+        FxTeste.capturar(raiz(), "12b-backup-premium");
+    }
+
+    @Test
     void redimensionamentoMantemALayoutUtilizavel() {
         abrir();
         importarPeloServico(ConstrutorDeExportacao.exemplo());

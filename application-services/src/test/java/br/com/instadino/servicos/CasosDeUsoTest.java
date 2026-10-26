@@ -274,6 +274,62 @@ class CasosDeUsoTest {
         assertThat(ctx.relacionamentos().painel()).isEmpty();
     }
 
+    // ---- backup protegido por senha ----
+
+    private static final String SENHA_DO_BACKUP = "senha do backup bem longa 2026";
+
+    @Test
+    void criarBackupExigePremiumEZeraASenhaMesmoQuandoNegado() {
+        abrir();
+        char[] senha = SENHA_DO_BACKUP.toCharArray();
+        assertThatThrownBy(() -> ctx.dados().criarBackup(pasta.resolve("b.instadinobkp"), senha))
+                .isInstanceOf(AcessoNegadoException.class).hasMessageContaining("Premium");
+        assertThat(senha).containsOnly('\0');
+        assertThat(pasta.resolve("b.instadinobkp")).doesNotExist();
+    }
+
+    @Test
+    void backupRestauraOsDadosAposPerdaTotalEOContextoExigeReinicio() {
+        licenca.set(PREMIUM);
+        abrir();
+        importar(ConstrutorDeExportacao.exemplo());
+        Path backup = pasta.resolve("b.instadinobkp");
+        ctx.dados().criarBackup(backup, SENHA_DO_BACKUP.toCharArray());
+        assertThat(ctx.dados().eventosDeSeguranca(10)).extracting(e -> e.tipo()).contains("BACKUP_CRIADO");
+
+        // desastre: todos os dados locais (inclusive a chave) são perdidos
+        ctx.dados().excluirTodosOsDados();
+        abrir();
+        assertThat(ctx.relacionamentos().painel()).isEmpty();
+
+        // mesmo no plano Free, recuperar os próprios dados nunca é bloqueado
+        licenca.set(EstadoDaLicenca.GRATUITO);
+        ctx.dados().restaurarBackup(backup, SENHA_DO_BACKUP.toCharArray());
+        assertThat(ctx.reinicioNecessario()).isTrue();
+        ctx.close();
+
+        abrir();
+        var painel = ctx.relacionamentos().painel().orElseThrow();
+        assertThat(painel.seguidores()).isEqualTo(4);
+        assertThat(painel.mutuos()).isEqualTo(2);
+        assertThat(ctx.dados().situacao().cifragemAtiva()).isTrue();
+    }
+
+    @Test
+    void senhaErradaNaRestauracaoNaoDerrubaNemAlteraOContexto() {
+        licenca.set(PREMIUM);
+        abrir();
+        importar(ConstrutorDeExportacao.exemplo());
+        Path backup = pasta.resolve("b.instadinobkp");
+        ctx.dados().criarBackup(backup, SENHA_DO_BACKUP.toCharArray());
+        char[] errada = "uma senha errada qualquer".toCharArray();
+        assertThatThrownBy(() -> ctx.dados().restaurarBackup(backup, errada)).hasMessageContaining("Senha incorreta");
+        assertThat(errada).containsOnly('\0');
+        assertThat(ctx.reinicioNecessario()).isFalse();
+        assertThat(ctx.relacionamentos().painel().orElseThrow().seguidores()).isEqualTo(4);
+        importar(new ConstrutorDeExportacao().seguidores("ana").seguindo("ana"));  // continua gravando normalmente
+    }
+
     @Test
     void situacaoDaProtecaoInformaCifragemEIntegridade() {
         abrir();

@@ -3,6 +3,8 @@ package br.com.instadino.servicos;
 import br.com.instadino.importacao.LimitesDeImportacao;
 import br.com.instadino.nucleo.acesso.FonteDeLicenca;
 import br.com.instadino.nucleo.acesso.PoliticaDeAcesso;
+import br.com.instadino.persistencia.BackupComSenha;
+import br.com.instadino.persistencia.BackupLocal;
 import br.com.instadino.persistencia.BancoLocal;
 import br.com.instadino.persistencia.migracao.CarregadorDeMigracoes;
 import br.com.instadino.persistencia.repositorio.RepositorioDeConsentimentos;
@@ -39,6 +41,7 @@ public final class ContextoLocal implements AutoCloseable {
     private final RepositorioDePreferencias preferencias;
     private final RepositorioDePerfis perfis;
     private boolean excluido;
+    private boolean restaurado;
 
     private ContextoLocal(Path diretorio, ProtetorDeSegredo protetor, FonteDeLicenca licenca, LimitesDeImportacao limites) {
         this.diretorio = diretorio;
@@ -63,7 +66,7 @@ public final class ContextoLocal implements AutoCloseable {
         this.importacao = new ServicoDeImportacao(limites, politica, repoImportacoes, perfis, auditoria, aoAlterar);
         this.historico = new ServicoDeHistorico(politica, repoImportacoes, sessao, auditoria, aoAlterar);
         this.exportacao = new ServicoDeExportacao(politica, relacionamentos, auditoria);
-        this.dados = new ServicoDeDados(politica, this, repoImportacoes, perfis, eventos);
+        this.dados = new ServicoDeDados(politica, this, repoImportacoes, perfis, eventos, auditoria);
     }
 
     public static ContextoLocal abrir(Path diretorioDeDados, ProtetorDeSegredo protetor, FonteDeLicenca licenca) {
@@ -105,6 +108,37 @@ public final class ContextoLocal implements AutoCloseable {
 
     public boolean excluido() {
         return excluido;
+    }
+
+    /** Cria um backup portátil protegido por senha (a senha é zerada). */
+    synchronized void criarBackupComSenha(Path destino, char[] senha) {
+        BackupComSenha.criar(banco, destino, senha);
+    }
+
+    /**
+     * Restaura um backup protegido por senha. Senha errada ou arquivo inválido falham ANTES de qualquer alteração e o
+     * contexto continua utilizável. Em caso de sucesso o banco foi substituído e o contexto fica inutilizável: o
+     * aplicativo deve ser reiniciado ({@link #reinicioNecessario()}). O banco anterior é preservado como {@code .antes}.
+     */
+    synchronized void restaurarBackupComSenha(Path arquivo, char[] senha) {
+        byte[] chave = new ArmazemDeChave(diretorio.resolve(ARQUIVO_CHAVE), protetor).obterOuCriar();
+        Path pronto = null;
+        try {
+            pronto = BackupComSenha.prepararRestauracao(arquivo, senha, chave, diretorio);
+            banco.close();
+            restaurado = true; // a partir daqui o banco aberto não vale mais, qualquer que seja o desfecho
+            BackupLocal.restaurar(pronto, diretorio.resolve(ARQUIVO_BANCO), chave);
+        } finally {
+            Arrays.fill(chave, (byte) 0);
+            if (pronto != null) {
+                BancoLocal.excluirArquivos(pronto);
+            }
+        }
+    }
+
+    /** Verdadeiro depois de uma restauração: os dados foram trocados e o aplicativo precisa ser reiniciado. */
+    public boolean reinicioNecessario() {
+        return restaurado;
     }
 
     public Path diretorioDeDados() {

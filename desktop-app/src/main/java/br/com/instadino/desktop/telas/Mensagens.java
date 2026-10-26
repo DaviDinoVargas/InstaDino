@@ -12,6 +12,17 @@ final class Mensagens {
     private Mensagens() {
     }
 
+    /**
+     * Mensagens das operações de backup. As exceções de {@code BackupComSenha} já trazem textos seguros em português
+     * (sem caminhos nem detalhes internos), então podem ser exibidas como estão.
+     */
+    static String paraBackup(Throwable t) {
+        if (t instanceof BancoException || t instanceof IllegalArgumentException) {
+            return t.getMessage();
+        }
+        return paraUsuario(t);
+    }
+
     static String paraUsuario(Throwable t) {
         if (t instanceof ImportacaoRejeitadaException e) {
             return e.getMessage();

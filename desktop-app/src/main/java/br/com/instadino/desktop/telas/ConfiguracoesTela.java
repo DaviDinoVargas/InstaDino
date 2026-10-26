@@ -50,7 +50,7 @@ final class ConfiguracoesTela extends TelaBase {
                     Clipboard.getSystemClipboard().setContent(c);
                     ui.notificador().info("Caminho copiado.");
                 }),
-                Ui.pequeno("Backup protegido e troca da pasta de dados ainda não estão disponíveis nesta versão."));
+                Ui.pequeno("O backup protegido por senha fica em Segurança e privacidade. A troca da pasta de dados ainda não está disponível nesta versão."));
         diagnostico.setText("InstaDino 0.1.0 (desenvolvimento)  •  Java " + System.getProperty("java.version") + "  •  "
                 + System.getProperty("os.name") + "  •  leitor de exportações " + ImportadorDeExportacao.VERSAO_DO_PARSER);
         VBox diag = Ui.cartao(Ui.tituloDeCartao("Diagnóstico"), diagnostico,
