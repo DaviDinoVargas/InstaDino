@@ -17,6 +17,7 @@ import java.util.Map;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
@@ -209,6 +210,9 @@ final class ImportacaoTela extends TelaBase {
         for (String aviso : r.avisos()) {
             conteudo.getChildren().add(Ui.caixa(Ui.Tipo.AVISO, aviso));
         }
+        if (!r.diagnosticos().isEmpty()) {
+            conteudo.getChildren().add(cartaoDeDiagnostico(r));
+        }
         conteudo.getChildren().add(Ui.suave("Nada foi gravado ainda. Revise o resumo e confirme para salvar no banco local protegido."));
 
         Runnable confirmar = () -> confirmar(zip, r);
@@ -217,6 +221,45 @@ final class ImportacaoTela extends TelaBase {
             mostrarSelecao();
         }));
         area.getChildren().setAll(conteudo, acoes);
+    }
+
+    /**
+     * Mostra, por arquivo de lista, quantos elementos foram lidos, aceitos e descartados. Serve para conferir se os números
+     * batem com a sua conta e para investigar quando não batem. O texto copiado traz só estrutura e contagens.
+     */
+    private VBox cartaoDeDiagnostico(ResultadoDaImportacao r) {
+        VBox linhas = new VBox(6);
+        boolean suspeito = false;
+        for (var d : r.diagnosticos()) {
+            boolean problema = d.erro() != null || (d.elementosLidos() > 0 && d.descartados() * 10 > d.elementosLidos());
+            suspeito |= problema;
+            String resumo = d.erro() != null ? "não foi possível ler (" + d.erro() + ")"
+                    : Formatos.inteiro(d.elementosLidos()) + " lidos • " + Formatos.inteiro(d.validos()) + " contas únicas • "
+                    + Formatos.inteiro(d.descartados()) + " descartados • " + Formatos.inteiro(d.duplicados()) + " repetidos";
+            Label linha = Ui.suave(d.caminho() + ": " + resumo);
+            linha.setWrapText(true);
+            if (problema) {
+                linha.getStyleClass().add("texto-erro");
+            }
+            linhas.getChildren().add(linha);
+        }
+        String texto = r.diagnosticos().stream().map(br.com.instadino.importacao.DiagnosticoDeArquivo::comoTexto)
+                .collect(java.util.stream.Collectors.joining("\n"));
+        Button copiar = Ui.secundario("Copiar diagnóstico", () -> {
+            javafx.scene.input.ClipboardContent c = new javafx.scene.input.ClipboardContent();
+            c.putString("InstaDino — diagnóstico da importação (leitor " + r.versaoDoParser() + ")\n\n" + texto);
+            javafx.scene.input.Clipboard.getSystemClipboard().setContent(c);
+            ui.notificador().sucesso("Diagnóstico copiado. Ele não contém nomes de usuário.");
+        });
+        VBox cartao = Ui.cartao(Ui.tituloDeCartao("Diagnóstico por arquivo"),
+                Ui.pequeno("Confira se estes números batem com a sua conta. Se algo parecer errado, copie o diagnóstico: ele mostra a "
+                        + "estrutura dos arquivos e contagens, sem nenhum nome de usuário, e permite corrigir o leitor."),
+                linhas, copiar);
+        if (suspeito) {
+            cartao.getChildren().add(1, Ui.caixa(Ui.Tipo.AVISO,
+                    "Há arquivos com muitos registros descartados ou ilegíveis. As listas podem estar incompletas: não confie nas contagens antes de investigar."));
+        }
+        return cartao;
     }
 
     private void confirmar(Path zip, ResultadoDaImportacao resultado) {

@@ -87,7 +87,49 @@ public final class LeitorDeRelacionamentos {
         }
     }
 
+    /**
+     * Descreve a forma do elemento: nomes de chaves e o TIPO de cada valor (texto, vazio, num...), nunca o conteúdo.
+     * Ex.: {@code {string_list_data:[1]{href:texto,timestamp:num,value:texto},title:vazio}}.
+     */
+    static String forma(JsonNode no) {
+        return forma(no, 0);
+    }
+
+    private static String forma(JsonNode no, int nivel) {
+        if (no == null || no.isNull()) {
+            return "nulo";
+        }
+        if (no.isArray()) {
+            return "[" + no.size() + "]" + (no.isEmpty() ? "" : nivel >= 3 ? "…" : forma(no.get(0), nivel + 1));
+        }
+        if (no.isObject()) {
+            if (nivel >= 3) {
+                return "{…}";
+            }
+            java.util.TreeSet<String> chaves = new java.util.TreeSet<>();
+            no.fieldNames().forEachRemaining(chaves::add);
+            StringBuilder s = new StringBuilder("{");
+            for (String c : chaves) {
+                if (s.length() > 1) {
+                    s.append(',');
+                }
+                s.append(c.length() > 40 ? c.substring(0, 40) + "…" : c).append(':').append(forma(no.get(c), nivel + 1));
+            }
+            return s.append('}').toString();
+        }
+        if (no.isTextual()) {
+            return no.asText().isEmpty() ? "vazio" : "texto";
+        }
+        return no.isNumber() ? "num" : no.isBoolean() ? "bool" : "valor";
+    }
+
     private static void processarElemento(JsonNode elemento, ResultadoDeLeitura resultado) {
+        resultado.registrarForma(forma(elemento));
+        JsonNode rotulos = elemento.get("label_values");
+        if (rotulos != null && rotulos.isArray() && !rotulos.isEmpty()) {
+            processarRotulos(elemento, rotulos, resultado);
+            return;
+        }
         String titulo = texto(elemento.get("title"));
         JsonNode itens = elemento.get("string_list_data");
         if (itens == null || !itens.isArray() || itens.isEmpty()) {
@@ -111,6 +153,46 @@ public final class LeitorDeRelacionamentos {
                 resultado.rejeitar(MOTIVO_SEM_USUARIO);
             }
         }
+    }
+
+    /**
+     * Formato mais recente de algumas listas (por exemplo, solicitações pendentes): uma lista {@code label_values} com
+     * pares rótulo/valor. Os rótulos mudam com o idioma, então o nome de usuário é procurado pelo endereço do perfil
+     * (em qualquer campo de texto) e, na falta dele, em um rótulo de nome de usuário.
+     */
+    private static void processarRotulos(JsonNode elemento, JsonNode rotulos, ResultadoDeLeitura resultado) {
+        Optional<NomeDeUsuario> usuario = Optional.empty();
+        for (JsonNode item : rotulos) {
+            usuario = NomeDeUsuario.deUrlDePerfil(texto(item.get("href"))).or(() -> NomeDeUsuario.deUrlDePerfil(texto(item.get("value"))));
+            if (usuario.isPresent()) {
+                break;
+            }
+        }
+        if (usuario.isEmpty()) {
+            for (JsonNode item : rotulos) {
+                String rotulo = texto(item.get("label"));
+                if (rotulo != null && (rotulo.toLowerCase(java.util.Locale.ROOT).contains("user") || rotulo.toLowerCase(java.util.Locale.ROOT).contains("usu"))) {
+                    usuario = NomeDeUsuario.tentar(texto(item.get("value")));
+                    if (usuario.isPresent()) {
+                        break;
+                    }
+                }
+            }
+        }
+        if (usuario.isEmpty()) {
+            resultado.rejeitar(MOTIVO_SEM_USUARIO);
+            return;
+        }
+        JsonNode ts = elemento.get("timestamp");
+        if (ts == null || !ts.canConvertToLong()) {
+            for (JsonNode item : rotulos) {
+                if (item.get("timestamp") != null && item.get("timestamp").canConvertToLong()) {
+                    ts = item.get("timestamp");
+                    break;
+                }
+            }
+        }
+        resultado.aceitar(usuario.get(), ts != null && ts.canConvertToLong() && ts.asLong() > 0 ? ts.asLong() : null);
     }
 
     public static ResultadoDeLeitura lerHtml(InputStream entrada) throws IOException {

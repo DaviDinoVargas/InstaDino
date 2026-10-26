@@ -32,7 +32,7 @@ import java.util.zip.ZipFile;
  */
 public final class ImportadorDeExportacao {
 
-    public static final String VERSAO_DO_PARSER = "1.0.0";
+    public static final String VERSAO_DO_PARSER = "1.1.0";
 
     private static final Map<CategoriaDeDados, TipoDeRelacionamento> TIPOS = new EnumMap<>(CategoriaDeDados.class);
 
@@ -79,6 +79,7 @@ public final class ImportadorDeExportacao {
         int invalidos = 0;
         int duplicados = 0;
         long totalLido = 0;
+        List<DiagnosticoDeArquivo> diagnosticos = new ArrayList<>();
 
         try (ZipFile arquivo = new ZipFile(zip.toFile(), StandardCharsets.UTF_8)) {
             int numero = 0;
@@ -105,6 +106,9 @@ public final class ImportadorDeExportacao {
                             ? LeitorDeRelacionamentos.lerJson(limitada, cancelamento)
                             : LeitorDeRelacionamentos.lerHtml(limitada);
                     totalLido += limitada.bytesLidos();
+                    diagnosticos.add(new DiagnosticoDeArquivo(DiagnosticoDeArquivo.caminhoSemRaiz(alvo.caminho()), alvo.categoria(),
+                            limitada.bytesLidos(), leitura.registrosLidos(), leitura.usuarios().size(), leitura.duplicados(),
+                            leitura.invalidosPorMotivo(), leitura.formas(), null));
                     Map<NomeDeUsuario, Long> destino = acumulado.computeIfAbsent(tipo, k -> new LinkedHashMap<>());
                     duplicados += leitura.duplicados();
                     for (Map.Entry<NomeDeUsuario, Long> u : leitura.usuarios().entrySet()) {
@@ -125,12 +129,14 @@ public final class ImportadorDeExportacao {
                         throw new ImportacaoRejeitadaException(Motivo.ENTRADA_CRIPTOGRAFADA);
                     }
                     incompletas.add(alvo.categoria());
+                    diagnosticos.add(erroDeArquivo(alvo, "arquivo corrompido"));
                     avisos.add("Um arquivo de " + alvo.categoria().rotulo() + " está corrompido e foi ignorado.");
                 } catch (IOException | RuntimeException e) {
                     if (e instanceof ImportacaoRejeitadaException rejeitada) {
                         throw rejeitada;
                     }
                     incompletas.add(alvo.categoria());
+                    diagnosticos.add(erroDeArquivo(alvo, e instanceof IOException ? "estrutura JSON/HTML inesperada ou truncada" : "falha ao interpretar"));
                     avisos.add("Um arquivo de " + alvo.categoria().rotulo() + " está ilegível ou incompleto e foi ignorado.");
                 }
             }
@@ -161,6 +167,11 @@ public final class ImportadorDeExportacao {
             avisos.add("A lista \"" + c.rotulo() + "\" pode estar incompleta; comparações que dependem dela devem ser interpretadas com cautela.");
         }
         return new ResultadoDaImportacao(VERSAO_DO_PARSER, inventario, relacionamentos, processadas, incompletas, validos,
-                invalidos, duplicados, invalidosPorMotivo, avisos, inicio.decorrido());
+                invalidos, duplicados, invalidosPorMotivo, avisos, inicio.decorrido(), diagnosticos);
+    }
+
+    private static DiagnosticoDeArquivo erroDeArquivo(EntradaInventariada alvo, String motivo) {
+        return new DiagnosticoDeArquivo(DiagnosticoDeArquivo.caminhoSemRaiz(alvo.caminho()), alvo.categoria(), alvo.tamanhoDeclarado(),
+                0, 0, 0, Map.of(), Map.of(), motivo);
     }
 }

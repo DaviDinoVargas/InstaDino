@@ -29,7 +29,8 @@ public record ResultadoDaImportacao(
         int registrosDuplicados,
         Map<String, Integer> invalidosPorMotivo,
         List<String> avisos,
-        Duration duracao) {
+        Duration duracao,
+        List<DiagnosticoDeArquivo> diagnosticos) {
 
     public ResultadoDaImportacao {
         relacionamentos = copiar(relacionamentos);
@@ -37,6 +38,7 @@ public record ResultadoDaImportacao(
         categoriasIncompletas = categoriasIncompletas.isEmpty() ? Set.of() : Set.copyOf(EnumSet.copyOf(categoriasIncompletas));
         invalidosPorMotivo = Map.copyOf(new TreeMap<>(invalidosPorMotivo));
         avisos = List.copyOf(avisos);
+        diagnosticos = List.copyOf(diagnosticos);
     }
 
     private static Map<TipoDeRelacionamento, List<Relacionamento>> copiar(Map<TipoDeRelacionamento, List<Relacionamento>> origem) {
