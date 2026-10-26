@@ -78,8 +78,8 @@ class DocumentoPdfTest {
         byte[] pdf = gerar(d -> d.paragrafo(longo).paragrafo(semEspacos));
         assertThat(paginasDe(pdf)).isGreaterThan(1);
         String texto = textoDe(pdf);
-        assertThat(texto).contains("palavra palavra");
-        assertThat(texto.replace("\n", "").replace(" ", "")).contains("x".repeat(100));
+        // a extração de texto não é a coisa testada aqui: ignora a forma como o extrator separa as palavras
+        assertThat(texto.replaceAll("\\s+", "")).contains("palavrapalavrapalavra").contains("x".repeat(100));
     }
 
     @Test
@@ -117,6 +117,16 @@ class DocumentoPdfTest {
         assertThat(paginasDe(umPonto)).isEqualTo(1);
         byte[] zeros = gerar(d -> d.graficoDeLinhas("Zeros", List.of("a", "b"), Map.of("S", List.of(0, 0))));
         assertThat(paginasDe(zeros)).isEqualTo(1);
+    }
+
+    @Test
+    void naoDependeDeFontesDoSistemaNemAsVarre() throws IOException {
+        long inicio = System.nanoTime();
+        byte[] pdf = gerar(d -> d.titulo("Conteúdo").paragrafo("qualquer texto com acentuação"));
+        assertThat(textoDe(pdf)).contains("Conteúdo");
+        // sem varrer as fontes instaladas: a criação do documento é imediata em qualquer sistema
+        assertThat((System.nanoTime() - inicio) / 1_000_000L).isLessThan(5_000L);
+        assertThat(org.apache.pdfbox.pdmodel.font.FontMappers.instance().getClass().getSimpleName()).isEqualTo("MapeadorSemFontesDoSistema");
     }
 
     @Test
