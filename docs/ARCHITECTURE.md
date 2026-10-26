@@ -26,15 +26,18 @@ Regra central: **os dados da exportação nunca atravessam a seta HTTPS.** O cli
 | Módulo | Responsabilidade | Depende de | Estado |
 |---|---|---|---|
 | `payment-contracts` | DTOs e contratos comerciais compartilhados (planos, licença, eventos, `ProvedorPagamento`) | — | planejado |
-| `application-core` | Modelos de domínio, catálogo de funcionalidades, regras Free/Premium | `payment-contracts` | planejado |
-| `instagram-importer` | Validação e inventário do ZIP, parsers, normalização | `application-core` | planejado |
-| `analytics-engine` | Comparação, estatísticas, histórico, relatórios | `application-core` | planejado |
-| `persistence` | SQLite cifrado, migrações, repositórios, proteção de chave | `application-core` | planejado |
+| `application-core` | Modelos de domínio (`NomeDeUsuario`, `Relacionamento`), catálogo de funcionalidades, política Free/Premium | — | **implementado** |
+| `instagram-importer` | Validação e inventário do ZIP, parsers, normalização | `application-core` | **implementado** (relacionamentos) |
+| `analytics-engine` | Comparação de conjuntos, indicadores sociais, CSV | `application-core` | **implementado** (sem PDF e gráficos) |
+| `persistence` | SQLite cifrado, migrações, repositórios, proteção de chave | `application-core` | **implementado** |
+| `application-services` | Casos de uso que combinam importador, análise, persistência e política | todos os acima | **implementado** (ver nota) |
+| `shared-test-fixtures` | Exportações sintéticas e ZIPs maliciosos (somente teste) | — | **implementado** |
 | `licensing-client` | Validação de licença assinada, cache seguro, cliente da API | `payment-contracts` | planejado |
 | `backend-api` | Autenticação, sessões, licenças, pagamentos, auditoria (domínio e persistência em pacotes internos) | `payment-contracts` | planejado |
 | `desktop-app` | JavaFX, navegação, telas, composição | todos os módulos do cliente | planejado |
-| `shared-test-fixtures` | ZIPs e dados sintéticos para testes | — | planejado |
 | `packaging` | `jpackage`, instalador, assinatura | `desktop-app` | planejado |
+
+**Nota sobre `application-services`:** os casos de uso ficam em módulo próprio, e não em `application-core`, porque dependem do importador, do motor de análise e da persistência, que por sua vez dependem de `application-core`; colocá-los lá criaria dependência circular.
 
 **Desvio da estrutura de referência:** `backend-domain` e `backend-persistence` não são módulos separados nesta etapa; viram pacotes de `backend-api` para evitar módulos que só existam para cumprir a lista. Podem ser extraídos se o backend crescer (ADR-0003).
 
