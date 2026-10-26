@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -27,7 +25,7 @@ public final class ValidadorDeZip {
     }
 
     public static InventarioDoZip inspecionar(Path zip, LimitesDeImportacao limites, Cancelamento cancelamento, OuvinteDeProgresso ouvinte) {
-        Instant inicio = Instant.now();
+        Cronometro inicio = new Cronometro();
         long tamanho = tamanhoValidado(zip, limites);
 
         List<EntradaInventariada> entradas = new ArrayList<>();
@@ -118,8 +116,8 @@ public final class ValidadorDeZip {
         }
     }
 
-    static void verificarTempo(Instant inicio, LimitesDeImportacao limites) {
-        if (Duration.between(inicio, Instant.now()).compareTo(limites.tempoMaximo()) > 0) {
+    static void verificarTempo(Cronometro inicio, LimitesDeImportacao limites) {
+        if (inicio.decorrido().compareTo(limites.tempoMaximo()) > 0) {
             throw new ImportacaoRejeitadaException(Motivo.TEMPO_ESGOTADO);
         }
     }

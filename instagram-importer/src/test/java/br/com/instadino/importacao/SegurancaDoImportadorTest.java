@@ -234,7 +234,8 @@ class SegurancaDoImportadorTest {
                 .isInstanceOfSatisfying(ImportacaoRejeitadaException.class, e -> assertThat(e.motivo()).isEqualTo(Motivo.CANCELADA));
     }
 
-    @Test
+    /** Repetido: o resultado não pode depender da granularidade do relógio (falhou de forma intermitente no Windows). */
+    @org.junit.jupiter.api.RepeatedTest(100)
     void tempoMaximoEsgotadoInterrompe() throws IOException {
         Path zip = gravar(ConstrutorDeExportacao.exemplo().bytes());
         var importador = new ImportadorDeExportacao(LimitesDeImportacao.padrao().comTempoMaximo(Duration.ofNanos(1)));
