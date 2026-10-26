@@ -34,6 +34,8 @@ public final class BancoLocal implements AutoCloseable {
         T executar(Connection conexao) throws SQLException;
     }
 
+    private static final java.util.regex.Pattern HEX_DE_CHAVE = java.util.regex.Pattern.compile("[0-9a-f]{64}");
+
     private final Path arquivo;
     private final byte[] chave;
     private boolean fechado;
@@ -122,6 +124,35 @@ public final class BancoLocal implements AutoCloseable {
             LOG.log(System.Logger.Level.WARNING, "Falha ao abrir o banco local (código {0}).", e.getErrorCode());
             throw new BancoException("Não foi possível abrir o banco local. Verifique a chave e a integridade do arquivo.", e.getErrorCode());
         }
+    }
+
+    /**
+     * Troca a chave de cifragem do arquivo (SQLite3 Multiple Ciphers, {@code PRAGMA hexrekey}). Usado apenas em cópias
+     * de backup. O PRAGMA não aceita parâmetros; por isso o valor é gerado a partir de exatamente 32 bytes e validado
+     * como 64 dígitos hexadecimais antes de entrar no comando (exceção documentada em ConsultasParametrizadasTest).
+     * Nenhuma outra conexão pode estar aberta no arquivo.
+     */
+    void trocarChave(byte[] nova) {
+        if (nova == null || nova.length != 32) {
+            throw new IllegalArgumentException("A chave deve ter 256 bits.");
+        }
+        String hexNovo = HexFormat.of().formatHex(nova);
+        if (!HEX_DE_CHAVE.matcher(hexNovo).matches()) {
+            throw new IllegalStateException("Chave em formato inesperado.");
+        }
+        String pragmaDeChave = "PRAGMA hexrekey = '" + hexNovo + "'";
+        try (Connection c = conexao(); Statement s = c.createStatement()) {
+            s.execute("PRAGMA journal_mode = DELETE"); // o resultado precisa ficar em um único arquivo
+            s.execute(pragmaDeChave);
+        } catch (SQLException e) {
+            throw new BancoException("Não foi possível trocar a chave do banco.", e.getErrorCode());
+        }
+        System.arraycopy(nova, 0, chave, 0, 32);
+    }
+
+    /** Cópia da chave atual para uso interno do pacote (backup); quem recebe deve zerá-la. */
+    byte[] copiaDaChave() {
+        return Arrays.copyOf(chave, chave.length);
     }
 
     /** Executa a operação em uma transação exclusiva; confirma no sucesso e desfaz em qualquer falha. */

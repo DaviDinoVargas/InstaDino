@@ -37,15 +37,17 @@ public final class BackupLocal {
         verificarBackup(backup, chave);
         Path destino = bancoDestino.toAbsolutePath();
         try {
-            if (Files.exists(destino)) {
-                Files.move(destino, Path.of(destino + ".antes"), StandardCopyOption.REPLACE_EXISTING);
-            }
-            for (String sufixo : new String[] {"-wal", "-shm"}) {
-                Files.deleteIfExists(Path.of(destino + sufixo));
-            }
+            Files.createDirectories(destino.getParent());
+            // a cópia (etapa que pode falhar por falta de espaço) é feita ANTES de tocar no banco atual
             Path temporario = Files.createTempFile(destino.getParent(), "restauracao-", ".tmp");
             try {
                 Files.copy(backup, temporario, StandardCopyOption.REPLACE_EXISTING);
+                if (Files.exists(destino)) {
+                    Files.move(destino, Path.of(destino + ".antes"), StandardCopyOption.REPLACE_EXISTING);
+                }
+                for (String sufixo : new String[] {"-wal", "-shm"}) {
+                    Files.deleteIfExists(Path.of(destino + sufixo));
+                }
                 try {
                     Files.move(temporario, destino, StandardCopyOption.ATOMIC_MOVE);
                 } catch (AtomicMoveNotSupportedException e) {
