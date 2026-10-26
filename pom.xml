@@ -18,6 +18,7 @@
     <module>instagram-importer</module>
     <module>analytics-engine</module>
     <module>application-services</module>
+    <module>desktop-app</module>
   </modules>
 
   <properties>
@@ -28,7 +29,7 @@
     <junit.version>5.14.4</junit.version>
     <assertj.version>3.27.7</assertj.version>
     <jackson.version>2.22.4</jackson.version>
-    <javafx.version>25.0.5</javafx.version>
+    <javafx.version>21.0.13</javafx.version>
     <sqlite.jdbc.version>3.53.4.0</sqlite.jdbc.version>
     <jna.version>5.19.1</jna.version>
     <jsoup.version>1.23.2</jsoup.version>
@@ -40,6 +41,7 @@
     <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
     <resources.plugin.version>3.5.0</resources.plugin.version>
     <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
+    <javafx.plugin.version>0.0.8</javafx.plugin.version>
   </properties>
 
   <dependencyManagement>
@@ -76,6 +78,11 @@
       <dependency>
         <groupId>org.openjfx</groupId>
         <artifactId>javafx-controls</artifactId>
+        <version>${javafx.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-swing</artifactId>
         <version>${javafx.version}</version>
       </dependency>
       <dependency>
@@ -129,6 +136,11 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>${jar.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.openjfx</groupId>
+          <artifactId>javafx-maven-plugin</artifactId>
+          <version>${javafx.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

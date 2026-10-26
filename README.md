@@ -1,12 +1,61 @@
 # InstaDino
 
-Aplicativo desktop para Windows, escrito em Java, que analisa localmente os dados da exportação oficial do Instagram fornecida pelo próprio usuário.
+Aplicativo desktop para Windows, escrito em Java, que analisa **localmente** os dados da exportação oficial do Instagram fornecida pelo próprio usuário.
 
-> Projeto em desenvolvimento. O estado real de cada módulo está descrito em `docs/`. Nenhuma funcionalidade é listada como pronta sem testes que a comprovem.
+> **Estado do projeto: em desenvolvimento, ainda não é uma versão comercial.** Este README descreve o que existe e foi testado. O detalhamento de cada área está em `docs/`.
+
+## O que já funciona
+
+| Área | Estado |
+|---|---|
+| Importação segura do ZIP oficial (JSON e HTML), inventário de categorias, limites anti-ZIP-bomb, proteção contra path traversal | **Implementado e testado** (com exportações sintéticas) |
+| Seguidores, seguindo, mútuos, não recíprocos, painel social, busca, ordenação, paginação | **Implementado e testado** |
+| Banco SQLite **cifrado**, chave protegida por DPAPI (Windows), migrações versionadas, backup, exclusão | **Implementado e testado em Linux**; DPAPI e Windows ainda **não verificados** em Windows real |
+| Histórico, comparação entre importações, CSV (básico e personalizado), política Free/Premium | **Implementado e testado** |
+| Interface JavaFX (tema escuro/claro, navegação, importação guiada, tabelas paginadas) | **Implementado**, testado sob display virtual |
+| Conta, login, licença assinada, backend comercial, pagamentos (sandbox) | **Ainda não implementado** |
+| Gráficos históricos, PDF, etiquetas, favoritos, biblioteca de conteúdo, atividade, mensagens | **Ainda não implementado** |
+| Instalador Windows (`jpackage`), assinatura de código | **Ainda não gerado** (exige Windows) |
+
+Avaliações de segurança: a **1** (modelo de ameaças) está em `docs/security/`; as **2** e **3** serão feitas nas fases correspondentes.
 
 ## Princípios
 
 - Os dados da exportação nunca saem do computador do usuário.
-- O plano gratuito funciona sem cadastro.
-- Pagamentos reais permanecem desabilitados até validação explícita.
-- Segurança é requisito de projeto, com avaliações formais documentadas em `docs/security/`.
+- O plano Free é permanente e não exige cadastro.
+- Pagamentos reais permanecem **desabilitados** até validação explícita.
+- O programa não inventa dados nem afirma eventos que a exportação não comprova (por exemplo, "deixou de seguir").
+
+## Requisitos para desenvolver
+
+- JDK 21 (LTS) e Maven 3.9+.
+- Para os testes de interface: um display (Linux: `xvfb-run`). Sem display, esses testes são **ignorados explicitamente**, nunca aprovados por omissão.
+
+## Compilar e testar
+
+```bash
+mvn -B verify                 # sem display: os testes de interface são ignorados
+xvfb-run -a mvn -B verify     # com display virtual: roda tudo
+scripts/verificar-segredos.sh --historico
+```
+
+## Executar (desenvolvimento)
+
+```bash
+# Linux/macOS (sem DPAPI): exige opt-in explícito, e o aplicativo avisa que NÃO há proteção real da chave.
+mvn -B -pl desktop-app -am install -DskipTests
+JAVA_TOOL_OPTIONS="-Dinstadino.modoInseguroDesenvolvimento=true" mvn -B -pl desktop-app javafx:run
+# Opcional: INSTADINO_DADOS=/caminho/da/pasta define onde ficam banco e chave.
+```
+
+Sem esse opt-in, fora do Windows, o aplicativo recusa criar o banco e mostra uma tela explicando o motivo.
+
+No Windows a chave do banco é protegida pela DPAPI e nenhum opt-in é necessário.
+
+## Estrutura
+
+Ver `docs/ARCHITECTURE.md`. Resumo: `application-core` (domínio e política de acesso), `instagram-importer`, `analytics-engine`, `persistence`, `application-services` (casos de uso), `desktop-app` (JavaFX), `shared-test-fixtures` (dados sintéticos).
+
+## Licença
+
+Todos os direitos reservados, até que o responsável pelo produto defina outra licença. Dependências de terceiros mantêm suas licenças originais.
