@@ -19,6 +19,7 @@ public final class Telas {
             case HISTORICO -> new HistoricoTela(ui);
             case BIBLIOTECA -> new BibliotecaTela(ui);
             case ATIVIDADE -> new AtividadeTela(ui);
+            case MENSAGENS -> new MensagensTela(ui);
             case RELATORIOS -> new RelatoriosTela(ui);
             case CONTA -> new ContaTela(ui);
             case PREMIUM -> new PremiumTela(ui);

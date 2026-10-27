@@ -9,6 +9,7 @@ public enum Destino {
     HISTORICO("Histórico"),
     BIBLIOTECA("Biblioteca de conteúdo"),
     ATIVIDADE("Atividade"),
+    MENSAGENS("Mensagens"),
     RELATORIOS("Relatórios"),
     CONTA("Conta"),
     PREMIUM("Premium"),

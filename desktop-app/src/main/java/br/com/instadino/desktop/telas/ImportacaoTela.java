@@ -14,10 +14,15 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BooleanSupplier;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
@@ -35,6 +40,9 @@ final class ImportacaoTela extends TelaBase {
     private final VBox area = new VBox(16);
     private Task<?> tarefaAtual;
     private Cancelamento cancelamento;
+    private CheckBox incluirMensagens;
+    /** Pede a confirmação do consentimento para o módulo de mensagens; os testes substituem por uma resposta fixa. */
+    BooleanSupplier confirmadorDeConsentimento = this::perguntarConsentimentoDeMensagens;
 
     ImportacaoTela(ContextoDaInterface ui) {
         super(ui, "Importar exportação", "Os dados são processados somente neste computador. Nada é enviado para a internet.");
@@ -156,15 +164,59 @@ final class ImportacaoTela extends TelaBase {
         for (String aviso : inventario.avisos()) {
             corpo.getChildren().add(Ui.caixa(Ui.Tipo.AVISO, aviso));
         }
-        if (!inventario.categoriasSensiveisPresentes().isEmpty()) {
+        boolean outrasSensiveis = inventario.categoriasSensiveisPresentes().stream().anyMatch(c -> c != CategoriaDeDados.MENSAGENS);
+        if (outrasSensiveis) {
             corpo.getChildren().add(Ui.caixa(Ui.Tipo.INFO,
-                    "Foram encontradas categorias sensíveis (perfil, segurança ou mensagens). Esta versão apenas as cataloga e não lê seu conteúdo."));
+                    "Foram encontradas categorias sensíveis (perfil e segurança). Esta versão apenas as cataloga e não lê seu conteúdo."));
+        }
+        incluirMensagens = null;
+        if (inventario.arquivosPorCategoria().containsKey(CategoriaDeDados.MENSAGENS)) {
+            corpo.getChildren().add(cartaoDeMensagens());
         }
         HBox acoes = new HBox(10, Ui.primario("Processar", () -> processar(zip)), Ui.secundario("Cancelar", this::mostrarSelecao));
         area.getChildren().setAll(corpo, acoes);
     }
 
+    /** Opção explícita e desligada por padrão: mensagens são o dado mais sensível da exportação. */
+    private VBox cartaoDeMensagens() {
+        var servico = ui.local().mensagens();
+        boolean premium = ui.local().politica().planoEfetivo() == br.com.instadino.nucleo.acesso.Plano.PREMIUM;
+        VBox cartao = Ui.cartao(Ui.tituloDeCartao("Mensagens (opcional)"));
+        cartao.getChildren().add(Ui.suave("A exportação contém suas conversas. Se você quiser, o InstaDino pode calcular estatísticas como mensagens por "
+                + "contato e por mês. Ele guarda só contagens e datas: o texto das mensagens não é lido para o banco, não entra em relatórios "
+                + "e nunca sai deste computador. Você pode apagar esses dados a qualquer momento na tela Mensagens."));
+        if (!premium) {
+            cartao.getChildren().add(Ui.caixa(Ui.Tipo.INFO, "Estatísticas de mensagens fazem parte do plano Premium. As mensagens não serão lidas."));
+            return cartao;
+        }
+        incluirMensagens = new CheckBox("Incluir estatísticas das minhas mensagens");
+        incluirMensagens.setId("incluir-mensagens");
+        incluirMensagens.setSelected(false);
+        incluirMensagens.setAccessibleText("Incluir estatísticas das mensagens nesta importação");
+        cartao.getChildren().add(incluirMensagens);
+        if (servico.consentimentoConcedido()) {
+            cartao.getChildren().add(Ui.pequeno("Você já autorizou este módulo. Marque a opção para incluí-lo nesta importação."));
+        }
+        return cartao;
+    }
+
+    private boolean perguntarConsentimentoDeMensagens() {
+        Alert aviso = new Alert(Alert.AlertType.CONFIRMATION,
+                "Ao habilitar, o InstaDino vai ler seus arquivos de conversas e guardar, no banco local cifrado, somente: o título de cada conversa "
+                        + "(nome do contato ou do grupo), quantas mensagens foram trocadas por mês, quantas enviadas por você, quantas continham "
+                        + "mídia e as datas da primeira e da última.\n\nO texto das mensagens não é guardado e nada é enviado para a internet. "
+                        + "Os nomes dos contatos são dados de terceiros: use-os só para sua própria análise.\n\nVocê pode revogar e apagar tudo "
+                        + "a qualquer momento na tela Mensagens.",
+                ButtonType.OK, ButtonType.CANCEL);
+        aviso.setHeaderText("Habilitar o módulo de mensagens?");
+        aviso.initOwner(ui.janela());
+        return aviso.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+    }
+
     private static String situacao(CategoriaDeDados categoria) {
+        if (categoria == CategoriaDeDados.MENSAGENS) {
+            return "Opcional (Premium): só contagens e datas";
+        }
         if (categoria.processadaNestaVersao()) {
             return "Será processada";
         }
@@ -177,12 +229,22 @@ final class ImportacaoTela extends TelaBase {
     // ---- 4. processamento ----
 
     private void processar(Path zip) {
+        boolean comMensagens = incluirMensagens != null && incluirMensagens.isSelected();
+        if (comMensagens && !ui.local().mensagens().consentimentoConcedido()) {
+            if (!confirmadorDeConsentimento.getAsBoolean()) {
+                incluirMensagens.setSelected(false);
+                ui.notificador().info("Sem a sua autorização, as mensagens não serão lidas.");
+                return;
+            }
+            ui.local().mensagens().conceder();
+        }
+        ConfiguracaoDeImportacao configuracao = new ConfiguracaoDeImportacao(comMensagens ? Set.of(CategoriaDeDados.MENSAGENS) : Set.of());
         cancelamento = new Cancelamento();
         ProgressBar barra = new ProgressBar(0);
         barra.setMaxWidth(Double.MAX_VALUE);
         Label mensagem = new Label("Preparando…");
         Task<ResultadoDaImportacao> tarefa = Tarefas.executar(
-                p -> ui.local().importacao().processar(zip, ConfiguracaoDeImportacao.padrao(), cancelamento, p::atualizar),
+                p -> ui.local().importacao().processar(zip, configuracao, cancelamento, p::atualizar),
                 resultado -> mostrarResumo(zip, resultado),
                 erro -> mostrarErro(Mensagens.paraUsuario(erro)));
         barra.progressProperty().bind(tarefa.progressProperty());

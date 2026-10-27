@@ -14,6 +14,7 @@ public final class Icones {
             Map.entry("historico", "M4 20V10h4v10zM10 20V4h4v16zM16 20v-7h4v7z"),
             Map.entry("relatorio", "M6 2h9l5 5v15H6zM14 3.5V8h4.5zM9 12h8v1.5H9zM9 15h8v1.5H9zM9 18h5v1.5H9z"),
             Map.entry("biblioteca", "M3 4h18v16H3zM5 6v12h14V6zM7 16l3.5-5 2.5 3 2-2.5 3 4.5z"),
+            Map.entry("mensagens", "M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"),
             Map.entry("atividade", "M3 13h4l2.5-7 4 13 2.5-6H21v-2h-3.8l-3.2 8.5-4-13-1.7 4.5H3z"),
             Map.entry("estrela", "M12 2l3 6.5 7 .9-5.2 4.8 1.4 7L12 17.6 5.8 21.2l1.4-7L2 9.4l7-.9z"),
             Map.entry("ajustes", "M3 5h12v2H3zM3 11h18v2H3zM3 17h8v2H3z"),
