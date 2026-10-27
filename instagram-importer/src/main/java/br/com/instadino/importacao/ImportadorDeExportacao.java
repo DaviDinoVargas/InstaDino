@@ -1,6 +1,8 @@
 package br.com.instadino.importacao;
 
 import br.com.instadino.importacao.ImportacaoRejeitadaException.Motivo;
+import br.com.instadino.importacao.parser.LeitorDeAtividade;
+import br.com.instadino.importacao.parser.LeitorDePublicacoes;
 import br.com.instadino.importacao.parser.LeitorDeRelacionamentos;
 import br.com.instadino.importacao.parser.ResultadoDeLeitura;
 import br.com.instadino.importacao.seguranca.EntradaLimitada;
@@ -32,7 +34,18 @@ import java.util.zip.ZipFile;
  */
 public final class ImportadorDeExportacao {
 
-    public static final String VERSAO_DO_PARSER = "1.3.0";
+    public static final String VERSAO_DO_PARSER = "1.4.0";
+
+    /** Categorias de atividade lidas por {@link LeitorDeAtividade}. */
+    public static final Set<CategoriaDeDados> ATIVIDADES = java.util.Collections.unmodifiableSet(EnumSet.of(CategoriaDeDados.CURTIDAS,
+            CategoriaDeDados.COMENTARIOS, CategoriaDeDados.SALVOS, CategoriaDeDados.PESQUISAS, CategoriaDeDados.INTERACOES_STORIES,
+            CategoriaDeDados.VISUALIZACOES));
+    /** Categorias de conteúdo lidas por {@link LeitorDePublicacoes}. */
+    public static final Set<CategoriaDeDados> CONTEUDOS = java.util.Collections.unmodifiableSet(EnumSet.of(CategoriaDeDados.PUBLICACOES,
+            CategoriaDeDados.STORIES, CategoriaDeDados.REELS));
+    /** Limites de volume por importação, para que uma exportação enorme não esgote a memória. */
+    public static final int MAXIMO_DE_REGISTROS_DE_ATIVIDADE = 1_000_000;
+    public static final int MAXIMO_DE_PUBLICACOES = 200_000;
 
     private static final Map<CategoriaDeDados, TipoDeRelacionamento> TIPOS = new EnumMap<>(CategoriaDeDados.class);
 
@@ -83,6 +96,9 @@ public final class ImportadorDeExportacao {
         int duplicados = 0;
         long totalLido = 0;
         List<DiagnosticoDeArquivo> diagnosticos = new ArrayList<>();
+        List<RegistroDeAtividade> atividades = new ArrayList<>();
+        List<Publicacao> publicacoes = new ArrayList<>();
+        java.util.function.Function<String, Publicacao.MidiaDePublicacao> resolvedorDeMidia = resolvedorDeMidia(inventario);
 
         try (ZipFile arquivo = new ZipFile(zip.toFile(), StandardCharsets.UTF_8)) {
             int numero = 0;
@@ -92,7 +108,9 @@ public final class ImportadorDeExportacao {
                 ouvinte.progresso("Lendo " + alvo.categoria().rotulo(), numero++, alvos.size());
                 TipoDeRelacionamento tipo = TIPOS.get(alvo.categoria());
                 ZipEntry entrada = arquivo.getEntry(alvo.nomeOriginal());
-                if (entrada == null || tipo == null) {
+                boolean ehAtividade = ATIVIDADES.contains(alvo.categoria());
+                boolean ehConteudo = CONTEUDOS.contains(alvo.categoria());
+                if (entrada == null || (tipo == null && !ehAtividade && !ehConteudo)) {
                     incompletas.add(alvo.categoria());
                     avisos.add("Um arquivo de " + alvo.categoria().rotulo() + " não pôde ser localizado.");
                     continue;
@@ -105,6 +123,39 @@ public final class ImportadorDeExportacao {
                 try (InputStream bruto = arquivo.getInputStream(entrada);
                      EntradaLimitada limitada = new EntradaLimitada(bruto,
                              Math.min(limites.tamanhoMaximoPorEntradaLida(), restante), vigia)) {
+                    if (tipo == null) {
+                        if (alvo.formato() != FormatoDeArquivo.JSON) {
+                            incompletas.add(alvo.categoria());
+                            diagnosticos.add(erroDeArquivo(alvo, "formato HTML não suportado para esta categoria; exporte em JSON"));
+                            avisos.add("Arquivos de " + alvo.categoria().rotulo() + " em HTML não são lidos. Peça a exportação em JSON.");
+                            continue;
+                        }
+                        if (ehAtividade) {
+                            var r = LeitorDeAtividade.ler(limitada, alvo.categoria(), subtipo(alvo.caminho()), cancelamento);
+                            totalLido += limitada.bytesLidos();
+                            registrarDiagnostico(diagnosticos, alvo, limitada.bytesLidos(), r.contagem());
+                            int espaco = MAXIMO_DE_REGISTROS_DE_ATIVIDADE - atividades.size();
+                            atividades.addAll(r.registros().subList(0, Math.min(espaco, r.registros().size())));
+                            if (r.registros().size() > espaco) {
+                                incompletas.add(alvo.categoria());
+                                avisos.add("Há registros de atividade demais; foram mantidos os primeiros " + MAXIMO_DE_REGISTROS_DE_ATIVIDADE + ".");
+                            }
+                            invalidos += r.contagem().rejeitadosPorMotivo().values().stream().mapToInt(Integer::intValue).sum();
+                        } else {
+                            var r = LeitorDePublicacoes.ler(limitada, alvo.categoria(), cancelamento, resolvedorDeMidia);
+                            totalLido += limitada.bytesLidos();
+                            registrarDiagnostico(diagnosticos, alvo, limitada.bytesLidos(), r.contagem());
+                            int espaco = MAXIMO_DE_PUBLICACOES - publicacoes.size();
+                            publicacoes.addAll(r.publicacoes().subList(0, Math.min(espaco, r.publicacoes().size())));
+                            if (r.publicacoes().size() > espaco) {
+                                incompletas.add(alvo.categoria());
+                                avisos.add("Há publicações demais; foram mantidas as primeiras " + MAXIMO_DE_PUBLICACOES + ".");
+                            }
+                            invalidos += r.contagem().rejeitadosPorMotivo().values().stream().mapToInt(Integer::intValue).sum();
+                        }
+                        processadas.add(alvo.categoria());
+                        continue;
+                    }
                     ResultadoDeLeitura leitura = alvo.formato() == FormatoDeArquivo.JSON
                             ? LeitorDeRelacionamentos.lerJson(limitada, cancelamento)
                             : LeitorDeRelacionamentos.lerHtml(limitada);
@@ -179,7 +230,7 @@ public final class ImportadorDeExportacao {
             avisos.add("A lista \"" + c.rotulo() + "\" pode estar incompleta; comparações que dependem dela devem ser interpretadas com cautela.");
         }
         return new ResultadoDaImportacao(VERSAO_DO_PARSER, inventario, relacionamentos, processadas, incompletas, validos,
-                invalidos, duplicados, invalidosPorMotivo, avisos, inicio.decorrido(), diagnosticos, cobertura);
+                invalidos, duplicados, invalidosPorMotivo, avisos, inicio.decorrido(), diagnosticos, cobertura, atividades, publicacoes);
     }
 
     private static DiagnosticoDeArquivo erroDeArquivo(EntradaInventariada alvo, String motivo) {
@@ -222,5 +273,44 @@ public final class ImportadorDeExportacao {
 
     private static String data(long segundos) {
         return DATA_BR.format(java.time.LocalDate.ofInstant(java.time.Instant.ofEpochSecond(segundos), java.time.ZoneOffset.UTC));
+    }
+
+    private static String subtipo(String caminho) {
+        String nome = caminho.substring(caminho.lastIndexOf('/') + 1).toLowerCase(java.util.Locale.ROOT);
+        int ponto = nome.lastIndexOf('.');
+        nome = ponto < 0 ? nome : nome.substring(0, ponto);
+        return nome.replaceAll("_\\d+$", "");
+    }
+
+    private static void registrarDiagnostico(List<DiagnosticoDeArquivo> diagnosticos, EntradaInventariada alvo, long bytes,
+                                             br.com.instadino.importacao.parser.ContagemDeLeitura c) {
+        diagnosticos.add(new DiagnosticoDeArquivo(DiagnosticoDeArquivo.caminhoSemRaiz(alvo.caminho()), alvo.categoria(), bytes, c.elementos(),
+                c.aceitos(), 0, c.rejeitadosPorMotivo(), c.formas(), c.primeiroInstante(), c.ultimoInstante(), null));
+    }
+
+    /** Resolve o caminho declarado de uma mídia contra o inventário (por sufixo de caminho), sem abrir nenhum arquivo. */
+    private static java.util.function.Function<String, Publicacao.MidiaDePublicacao> resolvedorDeMidia(InventarioDoZip inventario) {
+        Map<String, List<EntradaInventariada>> porNome = new java.util.HashMap<>();
+        for (EntradaInventariada e : inventario.entradas()) {
+            if (e.categoria() == CategoriaDeDados.MIDIA) {
+                String nome = e.caminho().substring(e.caminho().lastIndexOf('/') + 1).toLowerCase(java.util.Locale.ROOT);
+                porNome.computeIfAbsent(nome, k -> new ArrayList<>(1)).add(e);
+            }
+        }
+        return uri -> {
+            String u = uri.replace('\\', '/').toLowerCase(java.util.Locale.ROOT);
+            while (u.startsWith("./") || u.startsWith("/")) {
+                u = u.startsWith("./") ? u.substring(2) : u.substring(1);
+            }
+            String nome = u.substring(u.lastIndexOf('/') + 1);
+            for (EntradaInventariada e : porNome.getOrDefault(nome, List.of())) {
+                String c = e.caminho().toLowerCase(java.util.Locale.ROOT);
+                if (c.equals(u) || c.endsWith("/" + u)) {
+                    return new Publicacao.MidiaDePublicacao(DiagnosticoDeArquivo.caminhoSemRaiz(e.caminho()),
+                            Publicacao.TipoDeMidia.deCaminho(e.caminho()), e.tamanhoDeclarado());
+                }
+            }
+            return null;
+        };
     }
 }
