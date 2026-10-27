@@ -219,4 +219,43 @@ class DiagnosticoEFormatosTest {
         ResultadoDaImportacao r = importar(new ConstrutorDeExportacao().seguidores("ana").seguindo("bruno"));
         assertThat(r.avisosDeCobertura()).isEmpty();
     }
+
+    // ---- listas recentes ----
+
+    private static String registros(String chave, String... urls) {
+        StringBuilder j = new StringBuilder("{\"" + chave + "\":[");
+        for (int i = 0; i < urls.length; i++) {
+            j.append(i > 0 ? "," : "").append("{\"timestamp\":").append(1_700_000_000L + i).append(",\"media\":[],\"label_values\":[")
+                    .append("{\"label\":\"URL\",\"value\":\"https://www.instagram.com/").append(urls[i]).append("\"},{\"label\":\"Nome\",\"value\":\"\"}],\"fbid\":\"1\"}");
+        }
+        return j.append("]}").toString();
+    }
+
+    @Test
+    void leAsTresListasRecentesComTiposProprios() {
+        var c = new ConstrutorDeExportacao().seguidores("ana").seguindo("ana");
+        c.arquivo("connections/followers_and_following/recently_unfollowed_profiles.json", registros("relationships_unfollowed_users", "bia", "caio"));
+        c.arquivo("connections/followers_and_following/recent_follow_requests.json", registros("relationships_permanent_follow_requests", "dani"));
+        c.arquivo("connections/followers_and_following/follow_requests_you've_received.json", registros("relationships_follow_requests_received", "eva", "fabio"));
+        ResultadoDaImportacao r = importar(c);
+        assertThat(nomes(r, TipoDeRelacionamento.DEIXEI_DE_SEGUIR_RECENTE)).containsExactly("bia", "caio");
+        assertThat(nomes(r, TipoDeRelacionamento.SOLICITACAO_RECENTE)).containsExactly("dani");
+        assertThat(nomes(r, TipoDeRelacionamento.SOLICITACAO_RECEBIDA)).containsExactly("eva", "fabio");
+        assertThat(r.registrosInvalidos()).isZero();
+        // não contaminam as listas de seguidores e seguindo
+        assertThat(nomes(r, TipoDeRelacionamento.SEGUIDOR)).containsExactly("ana");
+        assertThat(r.categoriasProcessadas()).contains(CategoriaDeDados.DEIXEI_DE_SEGUIR, CategoriaDeDados.SOLICITACOES_RECENTES, CategoriaDeDados.SOLICITACOES_RECEBIDAS);
+    }
+
+    @Test
+    void apostrofoTipograficoNoNomeDoArquivoTambemEReconhecido() {
+        assertThat(ClassificadorDeCategoria.classificar("connections/followers_and_following/follow_requests_you\u2019ve_received.json"))
+                .isEqualTo(CategoriaDeDados.SOLICITACOES_RECEBIDAS);
+        assertThat(ClassificadorDeCategoria.classificar("connections/followers_and_following/follow_requests_you've_received.json"))
+                .isEqualTo(CategoriaDeDados.SOLICITACOES_RECEBIDAS);
+        assertThat(ClassificadorDeCategoria.classificar("connections/followers_and_following/recently_unfollowed_profiles.json"))
+                .isEqualTo(CategoriaDeDados.DEIXEI_DE_SEGUIR);
+        assertThat(ClassificadorDeCategoria.classificar("connections/followers_and_following/removed_suggestions.json"))
+                .isEqualTo(CategoriaDeDados.RELACIONAMENTOS_OUTROS);
+    }
 }

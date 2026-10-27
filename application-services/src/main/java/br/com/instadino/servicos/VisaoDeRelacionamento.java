@@ -10,7 +10,10 @@ public enum VisaoDeRelacionamento {
     PENDENTES("Solicitações pendentes"),
     BLOQUEADOS("Bloqueados"),
     RESTRITOS("Restritos"),
-    FAVORITOS("Amigos próximos");
+    FAVORITOS("Amigos próximos"),
+    DEIXEI_DE_SEGUIR("Deixei de seguir (recente)"),
+    SOLICITACOES_RECENTES("Solicitações recentes"),
+    SOLICITACOES_RECEBIDAS("Solicitações recebidas");
 
     private final String rotulo;
 

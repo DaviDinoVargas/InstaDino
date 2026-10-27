@@ -157,6 +157,9 @@ public final class ServicoDeRelacionamentos {
             case BLOQUEADOS -> contas(dados.getOrDefault(TipoDeRelacionamento.BLOQUEADO, List.of()));
             case RESTRITOS -> contas(dados.getOrDefault(TipoDeRelacionamento.RESTRITO, List.of()));
             case FAVORITOS -> contas(dados.getOrDefault(TipoDeRelacionamento.FAVORITO, List.of()));
+            case DEIXEI_DE_SEGUIR -> contas(dados.getOrDefault(TipoDeRelacionamento.DEIXEI_DE_SEGUIR_RECENTE, List.of()));
+            case SOLICITACOES_RECENTES -> contas(dados.getOrDefault(TipoDeRelacionamento.SOLICITACAO_RECENTE, List.of()));
+            case SOLICITACOES_RECEBIDAS -> contas(dados.getOrDefault(TipoDeRelacionamento.SOLICITACAO_RECEBIDA, List.of()));
             case MUTUOS, NAO_SEGUEM_DE_VOLTA, VOCE_NAO_SEGUE -> derivada(visao, dados);
         };
     }

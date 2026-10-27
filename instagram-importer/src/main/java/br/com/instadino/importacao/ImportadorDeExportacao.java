@@ -43,6 +43,9 @@ public final class ImportadorDeExportacao {
         TIPOS.put(CategoriaDeDados.BLOQUEADOS, TipoDeRelacionamento.BLOQUEADO);
         TIPOS.put(CategoriaDeDados.RESTRITOS, TipoDeRelacionamento.RESTRITO);
         TIPOS.put(CategoriaDeDados.FAVORITOS, TipoDeRelacionamento.FAVORITO);
+        TIPOS.put(CategoriaDeDados.DEIXEI_DE_SEGUIR, TipoDeRelacionamento.DEIXEI_DE_SEGUIR_RECENTE);
+        TIPOS.put(CategoriaDeDados.SOLICITACOES_RECENTES, TipoDeRelacionamento.SOLICITACAO_RECENTE);
+        TIPOS.put(CategoriaDeDados.SOLICITACOES_RECEBIDAS, TipoDeRelacionamento.SOLICITACAO_RECEBIDA);
     }
 
     private final LimitesDeImportacao limites;
