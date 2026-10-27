@@ -54,6 +54,17 @@ public final class ServicoDeAtividade {
     public record CruzamentoDeNaoReciprocos(List<ContaComInteracao> comInteracao, List<String> semNenhumaInteracao, int totalDeNaoReciprocos) {
     }
 
+    /** Tema ou anunciante registrado pelo Instagram, com a quantidade de vezes em que aparece. */
+    public record ItemDeInteresse(String texto, int vezes) {
+    }
+
+    /** Conteúdo de um arquivo de anúncios e preferências (por exemplo, os temas inferidos ou os anunciantes que usam seus dados). */
+    public record GrupoDeInteresses(String arquivo, int total, List<ItemDeInteresse> itens) {
+    }
+
+    public static final String LIMITACAO_DE_INTERESSES = "Estes itens são o que a exportação registra sobre anúncios, temas e anunciantes. Os rótulos "
+            + "e nomes de arquivo variam entre versões da exportação; se algo parecer faltar, confira o diagnóstico da importação.";
+
     public record TermoBuscado(String termo, int vezes, boolean voceSegue) {
     }
 
@@ -81,7 +92,29 @@ public final class ServicoDeAtividade {
 
     /** Verdadeiro se a importação mais recente tem algum registro de atividade. */
     public boolean temDados() {
-        return ultima().map(i -> !atividade.contagemPorCategoria(i.id()).isEmpty()).orElse(false);
+        return ultima().map(i -> atividade.contagemPorCategoria(i.id()).keySet().stream()
+                .anyMatch(c -> CATEGORIAS.stream().anyMatch(x -> x.name().equals(c)))).orElse(false);
+    }
+
+    /** Há registros de anúncios e interesses na importação mais recente. */
+    public boolean temInteresses() {
+        return ultima().map(i -> atividade.contagemPorCategoria(i.id()).containsKey(CategoriaDeDados.ANUNCIOS_E_PREFERENCIAS.name())).orElse(false);
+    }
+
+    /** "O que o Instagram registra sobre você": temas, anunciantes e anúncios vistos, agrupados por arquivo de origem. */
+    public List<GrupoDeInteresses> interesses(int limitePorGrupo) {
+        Optional<ResumoDaImportacao> i = ultima();
+        if (i.isEmpty()) {
+            return List.of();
+        }
+        String categoria = CategoriaDeDados.ANUNCIOS_E_PREFERENCIAS.name();
+        List<GrupoDeInteresses> grupos = new ArrayList<>();
+        for (var origem : atividade.subtipos(i.get().id(), categoria)) {
+            List<ItemDeInteresse> itens = atividade.textosDoSubtipo(i.get().id(), categoria, origem.conta(), limitePorGrupo).stream()
+                    .map(t -> new ItemDeInteresse(t.conta(), t.quantidade())).toList();
+            grupos.add(new GrupoDeInteresses(origem.conta(), origem.quantidade(), itens));
+        }
+        return grupos;
     }
 
     public List<ResumoPorCategoria> resumo() {
