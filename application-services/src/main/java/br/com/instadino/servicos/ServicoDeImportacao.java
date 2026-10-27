@@ -78,6 +78,10 @@ public final class ServicoDeImportacao {
                 .forEach((categoria, quantidade) -> categorias.computeIfAbsent(categoria, k -> new int[] {0, 0})[1] += quantidade.intValue());
         resultado.publicacoes().stream().collect(java.util.stream.Collectors.groupingBy(x -> x.categoria().name(), java.util.stream.Collectors.counting()))
                 .forEach((categoria, quantidade) -> categorias.computeIfAbsent(categoria, k -> new int[] {0, 0})[1] += quantidade.intValue());
+        if (!resultado.conversas().isEmpty()) {
+            categorias.computeIfAbsent(CategoriaDeDados.MENSAGENS.name(), k -> new int[] {0, 0})[1] +=
+                    resultado.conversas().stream().mapToInt(br.com.instadino.importacao.ResumoDeConversa::total).sum();
+        }
         List<RepositorioDeImportacoes.AtividadeGravada> atividades = resultado.atividades().stream()
                 .map(a -> new RepositorioDeImportacoes.AtividadeGravada(a.categoria().name(), a.subtipo(), a.conta(), a.texto(), a.referencia(), a.instanteEmSegundos()))
                 .toList();
@@ -85,9 +89,17 @@ public final class ServicoDeImportacao {
                 .map(x -> new RepositorioDeImportacoes.PublicacaoGravada(x.categoria().name(), x.legenda(), x.instanteEmSegundos(),
                         x.midias().stream().map(m -> new RepositorioDeImportacoes.MidiaGravada(m.caminho(), m.tipo().name(), m.tamanhoEmBytes())).toList()))
                 .toList();
+        List<RepositorioDeImportacoes.ConversaGravada> conversas = resultado.conversas().stream()
+                .map(c -> new RepositorioDeImportacoes.ConversaGravada(c.titulo(), c.participantes(), c.total(), c.enviadas(), c.midias(),
+                        c.primeiroInstante(), c.ultimoInstante(),
+                        c.meses().stream().map(m -> new RepositorioDeImportacoes.MesGravado(m.mes(), m.total(), m.enviadas())).toList()))
+                .toList();
+        if (!conversas.isEmpty()) {
+            politica.exigir(Funcionalidade.ARQUIVO_DE_MENSAGENS); // defesa em profundidade: o resultado pode ter vindo de outra configuração
+        }
         int retencao = politica.permite(Funcionalidade.HISTORICO_COMPLETO) ? 0 : RETENCAO_FREE;
         String id = importacoes.salvar(new NovaImportacao(perfilId, resultado.versaoDoParser(), "Exportação oficial (ZIP)",
-                nomeDoArquivo, tamanhoEmBytes, resultado.registrosValidos(), resultado.registrosInvalidos(), categorias, todos, resumoJson(resultado), atividades, publicacoes), retencao);
+                nomeDoArquivo, tamanhoEmBytes, resultado.registrosValidos(), resultado.registrosInvalidos(), categorias, todos, resumoJson(resultado), atividades, publicacoes, conversas), retencao);
         auditoria.registrar("IMPORTACAO_CONCLUIDA", resultado.registrosValidos() + " registros válidos");
         aoAlterarDados.run();
         return id;
