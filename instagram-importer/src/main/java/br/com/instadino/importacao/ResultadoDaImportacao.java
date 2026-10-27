@@ -33,7 +33,8 @@ public record ResultadoDaImportacao(
         List<DiagnosticoDeArquivo> diagnosticos,
         List<String> avisosDeCobertura,
         List<RegistroDeAtividade> atividades,
-        List<Publicacao> publicacoes) {
+        List<Publicacao> publicacoes,
+        List<ResumoDeConversa> conversas) {
 
     public ResultadoDaImportacao {
         relacionamentos = copiar(relacionamentos);
@@ -45,6 +46,7 @@ public record ResultadoDaImportacao(
         avisosDeCobertura = List.copyOf(avisosDeCobertura);
         atividades = List.copyOf(atividades);
         publicacoes = List.copyOf(publicacoes);
+        conversas = List.copyOf(conversas);
     }
 
     private static Map<TipoDeRelacionamento, List<Relacionamento>> copiar(Map<TipoDeRelacionamento, List<Relacionamento>> origem) {
