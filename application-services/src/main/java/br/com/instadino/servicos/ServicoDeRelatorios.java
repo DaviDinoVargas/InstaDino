@@ -3,6 +3,7 @@ package br.com.instadino.servicos;
 import br.com.instadino.analise.relatorio.DocumentoPdf;
 import br.com.instadino.analise.social.AnaliseDeSeguidores;
 import br.com.instadino.analise.social.ComparacaoDeImportacoes;
+import br.com.instadino.importacao.CategoriaDeDados;
 import br.com.instadino.nucleo.acesso.Funcionalidade;
 import br.com.instadino.nucleo.acesso.PoliticaDeAcesso;
 import br.com.instadino.nucleo.dominio.NomeDeUsuario;
@@ -36,7 +37,15 @@ public final class ServicoDeRelatorios {
 
     /** O que incluir no relatório. O padrão não traz nenhum dado de terceiros nem notas. */
     public record Opcoes(boolean indicadores, boolean qualidadeDaImportacao, boolean evolucao, boolean listaDeNaoSeguemDeVolta,
-                         boolean listaDeMutuos, boolean listaDeVoceNaoSegue, boolean favoritasEtiquetasENotas) {
+                         boolean listaDeMutuos, boolean listaDeVoceNaoSegue, boolean favoritasEtiquetasENotas, boolean resumoDeAtividade,
+                         boolean estatisticasDeConteudo, boolean rankingDeContas) {
+
+        /** Opções originais (sem atividade, conteúdo nem ranking de contas). */
+        public Opcoes(boolean indicadores, boolean qualidadeDaImportacao, boolean evolucao, boolean listaDeNaoSeguemDeVolta,
+                      boolean listaDeMutuos, boolean listaDeVoceNaoSegue, boolean favoritasEtiquetasENotas) {
+            this(indicadores, qualidadeDaImportacao, evolucao, listaDeNaoSeguemDeVolta, listaDeMutuos, listaDeVoceNaoSegue,
+                    favoritasEtiquetasENotas, false, false, false);
+        }
 
         public static Opcoes padrao() {
             return new Opcoes(true, true, false, false, false, false, false);
@@ -53,9 +62,14 @@ public final class ServicoDeRelatorios {
     private final ServicoDeAnotacoes anotacoes;
     private final ServicoDePerfis perfis;
     private final RegistroDeAuditoriaLocal auditoria;
+    private final ServicoDeAtividade atividade;
+    private final ServicoDeConteudo conteudo;
 
     ServicoDeRelatorios(PoliticaDeAcesso politica, ServicoDeRelacionamentos relacionamentos, ServicoDeHistorico historico,
-                        ServicoDeAnotacoes anotacoes, ServicoDePerfis perfis, RegistroDeAuditoriaLocal auditoria) {
+                        ServicoDeAnotacoes anotacoes, ServicoDePerfis perfis, RegistroDeAuditoriaLocal auditoria,
+                        ServicoDeAtividade atividade, ServicoDeConteudo conteudo) {
+        this.atividade = atividade;
+        this.conteudo = conteudo;
         this.politica = politica;
         this.relacionamentos = relacionamentos;
         this.historico = historico;
@@ -70,6 +84,12 @@ public final class ServicoDeRelatorios {
         if (opcoes.evolucao()) {
             politica.exigir(Funcionalidade.GRAFICOS_HISTORICOS);
         }
+        if (opcoes.resumoDeAtividade() || opcoes.rankingDeContas()) {
+            politica.exigir(Funcionalidade.ANALISE_DE_ATIVIDADE);
+        }
+        if (opcoes.estatisticasDeConteudo()) {
+            politica.exigir(Funcionalidade.BIBLIOTECA_DE_CONTEUDO);
+        }
         ResumoDoPainel painel = relacionamentos.painel().orElseThrow(() -> new IllegalStateException("Importe uma exportação antes de gerar o relatório."));
         ResumoDaImportacao importacao = painel.importacao();
         try (DocumentoPdf pdf = new DocumentoPdf("Relatório InstaDino", "InstaDino • Relatório da importação")) {
@@ -82,6 +102,12 @@ public final class ServicoDeRelatorios {
             }
             if (opcoes.evolucao()) {
                 evolucao(pdf);
+            }
+            if (opcoes.resumoDeAtividade()) {
+                resumoDeAtividade(pdf, opcoes.rankingDeContas());
+            }
+            if (opcoes.estatisticasDeConteudo()) {
+                estatisticasDeConteudo(pdf);
             }
             if (opcoes.listaDeNaoSeguemDeVolta()) {
                 lista(pdf, "Contas que você segue e que não aparecem como seguidores", VisaoDeRelacionamento.NAO_SEGUEM_DE_VOLTA, true);
@@ -205,6 +231,77 @@ public final class ServicoDeRelatorios {
             pdf.nota((serie.size() - completos.size()) + " importação(ões) sem uma das listas foram omitidas do gráfico.");
         }
         pdf.nota("Os pontos são observações nas datas das importações. Não indicam o que aconteceu entre elas.");
+    }
+
+    private void resumoDeAtividade(DocumentoPdf pdf, boolean comRanking) {
+        pdf.secao("Atividade registrada na exportação");
+        var resumo = atividade.resumo();
+        if (resumo.isEmpty()) {
+            pdf.paragrafo("A importação mais recente não tem registros de atividade.");
+            return;
+        }
+        List<List<String>> linhas = new ArrayList<>();
+        for (var r : resumo) {
+            linhas.add(List.of(r.categoria().rotulo(), numero(r.total()),
+                    r.de() == null ? "sem datas" : DATA.format(r.de().atZone(ZoneId.systemDefault())) + " a " + DATA.format(r.ate().atZone(ZoneId.systemDefault()))));
+        }
+        pdf.tabela(List.of("Categoria", "Registros", "Período"), linhas, new float[] {4, 2, 4});
+        // gráfico: registros por mês das categorias com ao menos 2 meses de dados
+        java.util.TreeSet<java.time.YearMonth> meses = new java.util.TreeSet<>();
+        Map<CategoriaDeDados, java.util.Map<java.time.YearMonth, Integer>> porCategoria = new LinkedHashMap<>();
+        for (var r : resumo) {
+            if (porCategoria.size() >= 4) {
+                break;
+            }
+            var m = atividade.porMes(r.categoria());
+            if (m.size() >= 2) {
+                porCategoria.put(r.categoria(), m);
+                meses.addAll(m.keySet());
+            }
+        }
+        if (meses.size() >= 2 && meses.size() <= 60) {
+            Map<String, List<Integer>> series = new LinkedHashMap<>();
+            porCategoria.forEach((c, m) -> series.put(c.rotulo(), meses.stream().map(x -> m.getOrDefault(x, 0)).toList()));
+            pdf.graficoDeLinhas("Registros por mês", meses.stream().map(m -> String.format("%02d/%d", m.getMonthValue(), m.getYear())).toList(), series);
+        }
+        if (comRanking) {
+            pdf.nota("Atenção: o ranking abaixo contém nomes de contas de terceiros presentes nos seus registros.");
+            for (CategoriaDeDados c : List.of(CategoriaDeDados.CURTIDAS, CategoriaDeDados.COMENTARIOS)) {
+                var ranking = atividade.ranking(c, 20);
+                if (!ranking.isEmpty()) {
+                    pdf.paragrafo("Contas com mais registros em " + c.rotulo().toLowerCase(Locale.ROOT) + ":");
+                    pdf.tabela(List.of("Conta", "Registros"), ranking.stream().map(i -> List.of(i.conta(), numero(i.quantidade()))).toList(), new float[] {4, 2});
+                }
+            }
+        }
+        pdf.nota(ServicoDeAtividade.LIMITACAO);
+    }
+
+    private void estatisticasDeConteudo(DocumentoPdf pdf) {
+        pdf.secao("Estatísticas de conteúdo");
+        var totais = conteudo.totais();
+        if (totais.total() == 0) {
+            pdf.paragrafo("A importação mais recente não tem publicações, reels ou stories.");
+            return;
+        }
+        List<List<String>> linhas = new ArrayList<>();
+        for (CategoriaDeDados c : ServicoDeConteudo.CATEGORIAS) {
+            Integer n = totais.porCategoria().get(c);
+            if (n == null) {
+                continue;
+            }
+            var f = conteudo.frequencia(c);
+            linhas.add(List.of(c.rotulo(), numero(n),
+                    f.map(x -> String.format(Locale.forLanguageTag("pt-BR"), "%.1f por mês", x.mediaPorMesNoPeriodo())).orElse("sem datas"),
+                    f.map(x -> String.format("%02d/%d (%d)", x.mesMaisAtivo().getMonthValue(), x.mesMaisAtivo().getYear(), x.publicacoesNoMesMaisAtivo())).orElse("—")));
+        }
+        pdf.tabela(List.of("Tipo", "Itens", "Média no período", "Mês mais ativo"), linhas, new float[] {3, 1.5f, 3, 3});
+        if (!totais.midias().isEmpty()) {
+            pdf.tabela(List.of("Mídia", "Arquivos", "Tamanho no ZIP"), totais.midias().stream().map(m -> List.of(
+                    m.tipo().equals("FOTO") ? "Fotos" : m.tipo().equals("VIDEO") ? "Vídeos" : "Outras", numero(m.quantidade()),
+                    m.bytes() > 0 ? numero(m.bytes() / 1024) + " KiB" : "desconhecido")).toList(), new float[] {3, 2, 3});
+        }
+        pdf.nota(ServicoDeConteudo.LIMITACAO);
     }
 
     private void lista(DocumentoPdf pdf, String titulo, VisaoDeRelacionamento visao, boolean avisarLimitacao) {

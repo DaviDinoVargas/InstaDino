@@ -51,3 +51,13 @@ Validação feita pelo responsável do produto, que colou o diagnóstico por arq
 - Arquivos como `follow_requests_you've_received.json`, `recent_follow_requests.json` e `recently_unfollowed_profiles.json` são inventariados como "outras listas de relacionamentos" e ainda **não** são processados.
 
 Limitação: estas conclusões vêm de UMA exportação, em português. Outros idiomas e versões do Instagram podem diferir.
+
+## Atividade e conteúdo (leitor 1.4.0)
+
+**Validação: somente com exportações sintéticas montadas a partir dos formatos descritos e do diagnóstico real dos arquivos de relacionamentos. Os formatos de atividade e conteúdo ainda NÃO foram conferidos com uma exportação real.** O diagnóstico por arquivo mostra, para cada arquivo, elementos lidos, aceitos, descartados e a forma do JSON; use-o para conferir.
+
+- **Atividade** (`CURTIDAS`, `COMENTARIOS`, `SALVOS`, `PESQUISAS`, `VISUALIZACOES`, `INTERACOES_STORIES`): leitura independente do idioma dos rótulos. Instante: `timestamp` do elemento ou o primeiro carimbo encontrado (milissegundos são convertidos). Conta: `title`, um valor que seja nome de usuário ou o endereço de perfil; endereços de publicação (`/p/`, `/reel/`, `/stories/`) nunca viram conta. Texto só em comentários e pesquisas. Dicas de rótulo (comment/comentário, owner/dono/autor/usuário) apenas desempatam.
+- **Conteúdo** (`PUBLICACOES`, `REELS`, `STORIES`): `media[{uri, creation_timestamp, title}]` ou `uri` direto. As mídias não são lidas nem extraídas; o caminho declarado é resolvido contra o inventário do ZIP para obter tipo e tamanho.
+- **Texto corrompido:** exportações JSON gravam UTF-8 como Latin-1 ("ção" vira "Ã§Ã£o"); a correção só é aplicada quando o texto inteiro cabe em Latin-1 e forma UTF-8 válido.
+- **Limites:** 1.000.000 registros de atividade e 200.000 publicações por importação (o excedente é descartado com aviso e a categoria é marcada incompleta). Arquivos HTML dessas categorias não são lidos (aviso para exportar em JSON).
+- **Free:** atividade e conteúdo não são lidos nem guardados; ao assinar é preciso importar de novo.

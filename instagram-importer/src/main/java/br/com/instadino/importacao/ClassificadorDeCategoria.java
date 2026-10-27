@@ -20,6 +20,8 @@ public final class ClassificadorDeCategoria {
     private static final Pattern SOLICITACOES_RECENTES = Pattern.compile("(^|/)recent_follow_requests(_\\d+)?\\.(json|html)$");
     // o nome real contém um apóstrofo (reto ou tipográfico): follow_requests_you've_received.json
     private static final Pattern SOLICITACOES_RECEBIDAS = Pattern.compile("(^|/)follow_requests_you.ve_received(_\\d+)?\\.(json|html)$");
+    private static final Pattern VISUALIZACOES = Pattern.compile(
+            "(^|/)(posts_viewed|videos_watched|stories_viewed|suggested_accounts_viewed|profiles_you.ve_viewed)(_\\d+)?\\.(json|html)$");
     private static final Pattern OUTRAS_LISTAS = Pattern.compile(
             "(^|/)(removed_suggestions|following_hashtags)(_\\d+)?\\.(json|html)$");
 
@@ -58,6 +60,12 @@ public final class ClassificadorDeCategoria {
         if (OUTRAS_LISTAS.matcher(c).find() || c.contains("followers_and_following/")) {
             return CategoriaDeDados.RELACIONAMENTOS_OUTROS;
         }
+        if (c.contains("story_interactions")) {
+            return CategoriaDeDados.INTERACOES_STORIES;
+        }
+        if (VISUALIZACOES.matcher(c).find()) {
+            return CategoriaDeDados.VISUALIZACOES;
+        }
         if (FormatoDeArquivo.deCaminho(c) == FormatoDeArquivo.MIDIA) {
             return CategoriaDeDados.MIDIA;
         }
@@ -79,7 +87,7 @@ public final class ClassificadorDeCategoria {
         if (c.contains("/saved/") || c.startsWith("saved/")) {
             return CategoriaDeDados.SALVOS;
         }
-        if (c.contains("recent_searches") || c.contains("account_searches") || c.contains("word_or_phrase_searches")) {
+        if (c.contains("recent_searches") || c.contains("account_searches") || c.contains("word_or_phrase_searches") || c.contains("profile_searches")) {
             return CategoriaDeDados.PESQUISAS;
         }
         if (c.contains("/reels") || c.contains("reels.json")) {

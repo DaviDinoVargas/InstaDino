@@ -63,16 +63,24 @@ final class RelatoriosTela extends TelaBase {
         qualidade.setSelected(true);
         CheckBox evolucao = new CheckBox("Evolução entre importações (gráfico)");
         evolucao.setDisable(!ui.local().politica().permite(Funcionalidade.GRAFICOS_HISTORICOS));
+        boolean atividadeLiberada = ui.local().politica().permite(Funcionalidade.ANALISE_DE_ATIVIDADE);
+        boolean conteudoLiberado = ui.local().politica().permite(Funcionalidade.BIBLIOTECA_DE_CONTEUDO);
+        CheckBox atividade = new CheckBox("Resumo da atividade registrada (números por categoria e por mês)");
+        atividade.setDisable(!atividadeLiberada);
+        CheckBox conteudo = new CheckBox("Estatísticas de conteúdo (publicações, reels, stories, mídias)");
+        conteudo.setDisable(!conteudoLiberado);
         Label aviso = Ui.pequeno("As opções abaixo incluem dados de terceiros ou pessoais e ficam desmarcadas por padrão.");
+        CheckBox ranking = new CheckBox("Ranking de contas na atividade (nomes de terceiros)");
+        ranking.setDisable(!atividadeLiberada);
         CheckBox naoSeguem = new CheckBox("Lista: contas que você segue e que não seguem de volta");
         CheckBox voceNaoSegue = new CheckBox("Lista: seguidores que você não segue");
         CheckBox mutuos = new CheckBox("Lista: relações mútuas");
         CheckBox anotacoes = new CheckBox("Favoritas, etiquetas e notas privadas");
         Button gerar = Ui.primario("Gerar relatório PDF…", () -> gerarRelatorio(new ServicoDeRelatorios.Opcoes(indicadores.isSelected(),
                 qualidade.isSelected(), evolucao.isSelected(), naoSeguem.isSelected(), mutuos.isSelected(), voceNaoSegue.isSelected(),
-                anotacoes.isSelected())));
+                anotacoes.isSelected(), atividade.isSelected(), conteudo.isSelected(), ranking.isSelected())));
         gerar.setDisable(!temDados);
-        cartao.getChildren().addAll(indicadores, qualidade, evolucao, aviso, naoSeguem, voceNaoSegue, mutuos, anotacoes, gerar);
+        cartao.getChildren().addAll(indicadores, qualidade, evolucao, atividade, conteudo, aviso, naoSeguem, voceNaoSegue, mutuos, ranking, anotacoes, gerar);
         pdf.getChildren().add(cartao);
         pdf.getChildren().add(secaoComparativa());
     }

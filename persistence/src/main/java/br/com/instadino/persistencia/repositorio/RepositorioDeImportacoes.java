@@ -24,7 +24,26 @@ public final class RepositorioDeImportacoes {
     /** Dados necessários para gravar uma importação. */
     public record NovaImportacao(long perfilId, String versaoDoParser, String origem, String nomeDoArquivo, Long tamanhoEmBytes,
                                  int registrosValidos, int registrosInvalidos, Map<String, int[]> categorias,
-                                 List<Relacionamento> relacionamentos, String resumoJson) {
+                                 List<Relacionamento> relacionamentos, String resumoJson, List<AtividadeGravada> atividades,
+                                 List<PublicacaoGravada> publicacoes) {
+
+        /** Importação sem atividade nem conteúdo (apenas relacionamentos). */
+        public NovaImportacao(long perfilId, String versaoDoParser, String origem, String nomeDoArquivo, Long tamanhoEmBytes,
+                              int registrosValidos, int registrosInvalidos, Map<String, int[]> categorias,
+                              List<Relacionamento> relacionamentos, String resumoJson) {
+            this(perfilId, versaoDoParser, origem, nomeDoArquivo, tamanhoEmBytes, registrosValidos, registrosInvalidos, categorias,
+                    relacionamentos, resumoJson, List.of(), List.of());
+        }
+    }
+
+    /** Registro de atividade a gravar; {@code categoria} é o nome da categoria de dados. */
+    public record AtividadeGravada(String categoria, String subtipo, String conta, String texto, String referencia, Long instante) {
+    }
+
+    public record MidiaGravada(String caminho, String tipo, Long tamanho) {
+    }
+
+    public record PublicacaoGravada(String categoria, String legenda, Long instante, List<MidiaGravada> midias) {
     }
 
     /** Linha do histórico. {@code categorias} mapeia o nome da categoria para {arquivos, registros}. */
@@ -103,6 +122,8 @@ public final class RepositorioDeImportacoes {
                 }
                 p.executeBatch();
             }
+            gravarAtividades(c, id, nova.atividades());
+            gravarPublicacoes(c, id, nova.publicacoes());
             if (manterNoMaximo > 0) {
                 try (PreparedStatement p = c.prepareStatement(
                         "DELETE FROM importacao WHERE perfil_id = ? AND id NOT IN ("
@@ -118,6 +139,74 @@ public final class RepositorioDeImportacoes {
         return id;
     }
 
+    private static void gravarAtividades(java.sql.Connection c, String id, List<AtividadeGravada> atividades) throws java.sql.SQLException {
+        if (atividades.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement p = c.prepareStatement(
+                "INSERT INTO atividade (importacao_id, categoria, subtipo, conta, texto, referencia, instante) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+            int pendentes = 0;
+            for (AtividadeGravada a : atividades) {
+                p.setString(1, id);
+                p.setString(2, a.categoria());
+                p.setString(3, a.subtipo());
+                p.setString(4, a.conta());
+                p.setString(5, a.texto());
+                p.setString(6, a.referencia());
+                if (a.instante() == null) {
+                    p.setNull(7, java.sql.Types.INTEGER);
+                } else {
+                    p.setLong(7, a.instante());
+                }
+                p.addBatch();
+                if (++pendentes % LOTE == 0) {
+                    p.executeBatch();
+                }
+            }
+            p.executeBatch();
+        }
+    }
+
+    private static void gravarPublicacoes(java.sql.Connection c, String id, List<PublicacaoGravada> publicacoes) throws java.sql.SQLException {
+        if (publicacoes.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement p = c.prepareStatement("INSERT INTO publicacao (importacao_id, categoria, legenda, instante) VALUES (?, ?, ?, ?)",
+                java.sql.Statement.RETURN_GENERATED_KEYS);
+             PreparedStatement m = c.prepareStatement("INSERT INTO midia (publicacao_id, ordem, caminho, tipo, tamanho) VALUES (?, ?, ?, ?, ?)")) {
+            for (PublicacaoGravada pub : publicacoes) {
+                p.setString(1, id);
+                p.setString(2, pub.categoria());
+                p.setString(3, pub.legenda());
+                if (pub.instante() == null) {
+                    p.setNull(4, java.sql.Types.INTEGER);
+                } else {
+                    p.setLong(4, pub.instante());
+                }
+                p.executeUpdate();
+                long publicacaoId;
+                try (ResultSet k = p.getGeneratedKeys()) {
+                    k.next();
+                    publicacaoId = k.getLong(1);
+                }
+                int ordem = 0;
+                for (MidiaGravada md : pub.midias()) {
+                    m.setLong(1, publicacaoId);
+                    m.setInt(2, ordem++);
+                    m.setString(3, md.caminho());
+                    m.setString(4, md.tipo());
+                    if (md.tamanho() == null) {
+                        m.setNull(5, java.sql.Types.INTEGER);
+                    } else {
+                        m.setLong(5, md.tamanho());
+                    }
+                    m.addBatch();
+                }
+                m.executeBatch();
+            }
+        }
+    }
+
     /** Importações do perfil, da mais recente para a mais antiga. */
     public List<ResumoDaImportacao> listar(long perfilId) {
         return banco.emTransacao(c -> {
@@ -129,8 +218,9 @@ public final class RepositorioDeImportacoes {
                 try (ResultSet r = p.executeQuery()) {
                     while (r.next()) {
                         long tamanho = r.getLong(7);
+                        boolean semTamanho = r.wasNull(); // wasNull() vale só para a ÚLTIMA coluna lida: capturar já
                         lista.add(new ResumoDaImportacao(r.getString(1), r.getLong(2), Instant.parse(r.getString(3)), r.getString(4),
-                                r.getString(5), r.getString(6), r.wasNull() ? null : tamanho, r.getInt(8), r.getInt(9),
+                                r.getString(5), r.getString(6), semTamanho ? null : tamanho, r.getInt(8), r.getInt(9),
                                 categoriasDe(c, r.getString(1))));
                     }
                 }
@@ -154,8 +244,9 @@ public final class RepositorioDeImportacoes {
                         return Optional.<ResumoDaImportacao>empty();
                     }
                     long tamanho = r.getLong(7);
+                    boolean semTamanho = r.wasNull();
                     return Optional.of(new ResumoDaImportacao(r.getString(1), r.getLong(2), Instant.parse(r.getString(3)), r.getString(4),
-                            r.getString(5), r.getString(6), r.wasNull() ? null : tamanho, r.getInt(8), r.getInt(9), categoriasDe(c, id)));
+                            r.getString(5), r.getString(6), semTamanho ? null : tamanho, r.getInt(8), r.getInt(9), categoriasDe(c, id)));
                 }
             }
         });

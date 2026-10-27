@@ -2,7 +2,7 @@
 
 Banco SQLite cifrado. Esquema definido por migrações versionadas em `persistence/src/main/resources/db/migracoes/`. Migrações publicadas **nunca são editadas** (o checksum é conferido); mudanças entram como nova versão.
 
-## Versão atual: V002
+## Versão atual: V004
 
 | Tabela | Finalidade | Observações |
 |---|---|---|
@@ -16,11 +16,14 @@ Banco SQLite cifrado. Esquema definido por migrações versionadas em `persisten
 | `etiqueta` | Etiquetas criadas pelo usuário, por perfil | nome 1–40 caracteres, único por perfil sem distinguir caixa; máximo de 100 por perfil (regra do repositório) |
 | `anotacao_conta` | Favorito e nota privada (≤ 2000 caracteres) sobre uma conta, por perfil | PK (perfil, usuário); a linha só existe enquanto houver favorito ou nota |
 | `conta_etiqueta` | Etiquetas aplicadas a contas | só aceita etiqueta do mesmo perfil (verificado no repositório e por teste) |
+| `relacionamento` (V003) | Recriada para aceitar os tipos `DEIXEI_DE_SEGUIR_RECENTE`, `SOLICITACAO_RECENTE` e `SOLICITACAO_RECEBIDA` | dados preservados na migração (testado) |
+| `atividade` (V004) | Curtidas, comentários, salvos, pesquisas, visualizações e interações com stories: categoria, subtipo (nome do arquivo), conta, texto (≤ 1000), referência (≤ 500), instante | por importação; `ON DELETE CASCADE`; só é gravada no Premium |
+| `publicacao` e `midia` (V004) | Catálogo de publicações, reels e stories e metadados das mídias (caminho, tipo, tamanho) | **as mídias em si não são copiadas**; ficam no ZIP original |
 | `esquema_migracoes` | Histórico, checksum e data de cada migração | gerida pelo `Migrador` |
 
 As anotações (V002) pertencem ao **perfil** e ao nome de usuário normalizado, não a uma importação: sobrevivem a novas importações e à exclusão de importações, e são apagadas junto com o perfil.
 
-Tabelas de atividade, conteúdo e mensagens serão adicionadas por migrações futuras, junto com os recursos correspondentes.
+Tabelas de mensagens serão adicionadas por migração futura, junto com o recurso correspondente.
 
 ## Regras
 
