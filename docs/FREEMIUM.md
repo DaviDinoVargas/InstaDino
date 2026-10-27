@@ -22,9 +22,11 @@ A decisão de acesso é centralizada em `PoliticaDeAcesso` (módulo `application
 | Gráficos históricos | `graficos.historicos` | Premium | `ServicoDeHistorico.serieHistorica`; pontos são observações por importação, nunca uma série contínua |
 | Relatório PDF | `relatorio.pdf` | Premium | `ServicoDeRelatorios`; por padrão traz só números; listas de contas, etiquetas e notas só com opção explícita |
 | Relatório comparativo | `relatorios.comparativos` | Premium | `ServicoDeRelatorios.gerarRelatorioComparativo` |
+| Biblioteca de conteúdo | `conteudo.biblioteca` | Premium | `ServicoDeConteudo`; guarda só metadados; no Free o conteúdo nem é lido na importação |
+| Análise de atividade | `atividade.analise` | Premium | `ServicoDeAtividade`; só contagens e datas dos registros, nunca intenção; no Free a atividade nem é lida na importação |
 | Backup protegido por senha | `backup.protegido` | Premium | `ServicoDeDados.criarBackup`; **restaurar nunca exige plano** |
 
-Os demais itens do catálogo (`Funcionalidade`) existem para a política, mas **ainda não têm implementação**: biblioteca de conteúdo, análise de atividade, explorador, painéis personalizados e arquivo de mensagens.
+Os demais itens do catálogo (`Funcionalidade`) existem para a política, mas **ainda não têm implementação**: explorador, painéis personalizados e arquivo de mensagens.
 
 ## Regras verificadas por teste
 

@@ -114,6 +114,8 @@ public final class JanelaPrincipal {
                 item(Destino.IMPORTACAO, "importar", "Importar"),
                 item(Destino.RELACIONAMENTOS, "usuarios", "Relacionamentos"),
                 item(Destino.HISTORICO, "historico", "Histórico"),
+                item(Destino.BIBLIOTECA, "biblioteca", "Biblioteca"),
+                item(Destino.ATIVIDADE, "atividade", "Atividade"),
                 item(Destino.RELATORIOS, "relatorio", "Relatórios"),
                 secao("CONTA"),
                 item(Destino.CONTA, "usuario", "Conta"),

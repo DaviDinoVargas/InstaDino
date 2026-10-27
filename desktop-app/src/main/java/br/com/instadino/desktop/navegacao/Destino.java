@@ -7,6 +7,8 @@ public enum Destino {
     IMPORTACAO("Importar"),
     RELACIONAMENTOS("Relacionamentos"),
     HISTORICO("Histórico"),
+    BIBLIOTECA("Biblioteca de conteúdo"),
+    ATIVIDADE("Atividade"),
     RELATORIOS("Relatórios"),
     CONTA("Conta"),
     PREMIUM("Premium"),

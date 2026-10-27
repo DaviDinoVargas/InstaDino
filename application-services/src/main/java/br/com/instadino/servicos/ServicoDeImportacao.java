@@ -74,9 +74,20 @@ public final class ServicoDeImportacao {
             categorias.computeIfAbsent(categoria.name(), k -> new int[] {0, 0})[1] += lista.size();
         });
 
+        resultado.atividades().stream().collect(java.util.stream.Collectors.groupingBy(a -> a.categoria().name(), java.util.stream.Collectors.counting()))
+                .forEach((categoria, quantidade) -> categorias.computeIfAbsent(categoria, k -> new int[] {0, 0})[1] += quantidade.intValue());
+        resultado.publicacoes().stream().collect(java.util.stream.Collectors.groupingBy(x -> x.categoria().name(), java.util.stream.Collectors.counting()))
+                .forEach((categoria, quantidade) -> categorias.computeIfAbsent(categoria, k -> new int[] {0, 0})[1] += quantidade.intValue());
+        List<RepositorioDeImportacoes.AtividadeGravada> atividades = resultado.atividades().stream()
+                .map(a -> new RepositorioDeImportacoes.AtividadeGravada(a.categoria().name(), a.subtipo(), a.conta(), a.texto(), a.referencia(), a.instanteEmSegundos()))
+                .toList();
+        List<RepositorioDeImportacoes.PublicacaoGravada> publicacoes = resultado.publicacoes().stream()
+                .map(x -> new RepositorioDeImportacoes.PublicacaoGravada(x.categoria().name(), x.legenda(), x.instanteEmSegundos(),
+                        x.midias().stream().map(m -> new RepositorioDeImportacoes.MidiaGravada(m.caminho(), m.tipo().name(), m.tamanhoEmBytes())).toList()))
+                .toList();
         int retencao = politica.permite(Funcionalidade.HISTORICO_COMPLETO) ? 0 : RETENCAO_FREE;
         String id = importacoes.salvar(new NovaImportacao(perfilId, resultado.versaoDoParser(), "Exportação oficial (ZIP)",
-                nomeDoArquivo, tamanhoEmBytes, resultado.registrosValidos(), resultado.registrosInvalidos(), categorias, todos, resumoJson(resultado)), retencao);
+                nomeDoArquivo, tamanhoEmBytes, resultado.registrosValidos(), resultado.registrosInvalidos(), categorias, todos, resumoJson(resultado), atividades, publicacoes), retencao);
         auditoria.registrar("IMPORTACAO_CONCLUIDA", resultado.registrosValidos() + " registros válidos");
         aoAlterarDados.run();
         return id;
@@ -100,7 +111,9 @@ public final class ServicoDeImportacao {
         var permitidas = pedida.categoriasSensiveisAutorizadas().stream()
                 .filter(c -> c != CategoriaDeDados.MENSAGENS || politica.permite(Funcionalidade.ARQUIVO_DE_MENSAGENS))
                 .collect(java.util.stream.Collectors.toSet());
-        return new ConfiguracaoDeImportacao(permitidas);
+        // Atividade e conteúdo são recursos Premium: sem o plano eles nem são lidos nem guardados.
+        return new ConfiguracaoDeImportacao(permitidas, politica.permite(Funcionalidade.ANALISE_DE_ATIVIDADE),
+                politica.permite(Funcionalidade.BIBLIOTECA_DE_CONTEUDO));
     }
 
     private static CategoriaDeDados categoriaDoTipo(br.com.instadino.nucleo.dominio.TipoDeRelacionamento tipo) {

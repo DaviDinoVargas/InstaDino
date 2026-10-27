@@ -8,6 +8,8 @@ import br.com.instadino.persistencia.BackupLocal;
 import br.com.instadino.persistencia.BancoLocal;
 import br.com.instadino.persistencia.migracao.CarregadorDeMigracoes;
 import br.com.instadino.persistencia.repositorio.RepositorioDeAnotacoes;
+import br.com.instadino.persistencia.repositorio.RepositorioDeAtividade;
+import br.com.instadino.persistencia.repositorio.RepositorioDeConteudo;
 import br.com.instadino.persistencia.repositorio.RepositorioDeConsentimentos;
 import br.com.instadino.persistencia.repositorio.RepositorioDeEventosDeSeguranca;
 import br.com.instadino.persistencia.repositorio.RepositorioDeImportacoes;
@@ -41,6 +43,8 @@ public final class ContextoLocal implements AutoCloseable {
     private final ServicoDeAnotacoes anotacoes;
     private final ServicoDePerfis servicoDePerfis;
     private final ServicoDeRelatorios relatorios;
+    private final ServicoDeAtividade servicoDeAtividade;
+    private final ServicoDeConteudo servicoDeConteudo;
     private final RepositorioDeConsentimentos consentimentos;
     private final RepositorioDePreferencias preferencias;
     private final RepositorioDePerfis perfis;
@@ -69,11 +73,15 @@ public final class ContextoLocal implements AutoCloseable {
         this.relacionamentos = new ServicoDeRelacionamentos(politica, repoImportacoes, sessao, repoAnotacoes);
         Runnable aoAlterar = relacionamentos::invalidarCache;
         this.anotacoes = new ServicoDeAnotacoes(politica, repoAnotacoes, sessao);
+        java.time.ZoneId fuso = java.time.ZoneId.systemDefault();
+        this.servicoDeAtividade = new ServicoDeAtividade(politica, repoImportacoes, new RepositorioDeAtividade(banco), relacionamentos, sessao, fuso);
+        this.servicoDeConteudo = new ServicoDeConteudo(politica, repoImportacoes, new RepositorioDeConteudo(banco), sessao, fuso);
         this.servicoDePerfis = new ServicoDePerfis(politica, perfis, sessao, auditoria, aoAlterar);
         this.importacao = new ServicoDeImportacao(limites, politica, repoImportacoes, perfis, auditoria, aoAlterar);
         this.historico = new ServicoDeHistorico(politica, repoImportacoes, sessao, auditoria, aoAlterar);
         this.exportacao = new ServicoDeExportacao(politica, relacionamentos, auditoria);
-        this.relatorios = new ServicoDeRelatorios(politica, relacionamentos, historico, anotacoes, servicoDePerfis, auditoria);
+        this.relatorios = new ServicoDeRelatorios(politica, relacionamentos, historico, anotacoes, servicoDePerfis, auditoria,
+                servicoDeAtividade, servicoDeConteudo);
         this.dados = new ServicoDeDados(politica, this, repoImportacoes, perfis, eventos, auditoria);
     }
 
@@ -175,6 +183,14 @@ public final class ContextoLocal implements AutoCloseable {
 
     public ServicoDeExportacao exportacao() {
         return exportacao;
+    }
+
+    public ServicoDeAtividade atividade() {
+        return servicoDeAtividade;
+    }
+
+    public ServicoDeConteudo conteudo() {
+        return servicoDeConteudo;
     }
 
     public ServicoDeRelatorios relatorios() {
