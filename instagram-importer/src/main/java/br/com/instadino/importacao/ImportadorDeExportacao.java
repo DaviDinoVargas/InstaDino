@@ -35,12 +35,12 @@ import java.util.zip.ZipFile;
  */
 public final class ImportadorDeExportacao {
 
-    public static final String VERSAO_DO_PARSER = "1.5.0";
+    public static final String VERSAO_DO_PARSER = "1.6.0";
 
     /** Categorias de atividade lidas por {@link LeitorDeAtividade}. */
     public static final Set<CategoriaDeDados> ATIVIDADES = java.util.Collections.unmodifiableSet(EnumSet.of(CategoriaDeDados.CURTIDAS,
             CategoriaDeDados.COMENTARIOS, CategoriaDeDados.SALVOS, CategoriaDeDados.PESQUISAS, CategoriaDeDados.INTERACOES_STORIES,
-            CategoriaDeDados.VISUALIZACOES));
+            CategoriaDeDados.VISUALIZACOES, CategoriaDeDados.ANUNCIOS_E_PREFERENCIAS));
     /** Categorias de conteúdo lidas por {@link LeitorDePublicacoes}. */
     public static final Set<CategoriaDeDados> CONTEUDOS = java.util.Collections.unmodifiableSet(EnumSet.of(CategoriaDeDados.PUBLICACOES,
             CategoriaDeDados.STORIES, CategoriaDeDados.REELS));
