@@ -16,8 +16,12 @@ public final class ClassificadorDeCategoria {
     private static final Pattern BLOQUEADOS = Pattern.compile("(^|/)blocked_profiles(_\\d+)?\\.(json|html)$");
     private static final Pattern RESTRITOS = Pattern.compile("(^|/)restricted_profiles(_\\d+)?\\.(json|html)$");
     private static final Pattern FAVORITOS = Pattern.compile("(^|/)close_friends(_\\d+)?\\.(json|html)$");
+    private static final Pattern DEIXEI_DE_SEGUIR = Pattern.compile("(^|/)recently_unfollowed_(profiles|accounts)(_\\d+)?\\.(json|html)$");
+    private static final Pattern SOLICITACOES_RECENTES = Pattern.compile("(^|/)recent_follow_requests(_\\d+)?\\.(json|html)$");
+    // o nome real contém um apóstrofo (reto ou tipográfico): follow_requests_you've_received.json
+    private static final Pattern SOLICITACOES_RECEBIDAS = Pattern.compile("(^|/)follow_requests_you.ve_received(_\\d+)?\\.(json|html)$");
     private static final Pattern OUTRAS_LISTAS = Pattern.compile(
-            "(^|/)(recently_unfollowed_profiles|recent_follow_requests|removed_suggestions|following_hashtags)(_\\d+)?\\.(json|html)$");
+            "(^|/)(removed_suggestions|following_hashtags)(_\\d+)?\\.(json|html)$");
 
     private ClassificadorDeCategoria() {
     }
@@ -41,6 +45,15 @@ public final class ClassificadorDeCategoria {
         }
         if (FAVORITOS.matcher(c).find()) {
             return CategoriaDeDados.FAVORITOS;
+        }
+        if (DEIXEI_DE_SEGUIR.matcher(c).find()) {
+            return CategoriaDeDados.DEIXEI_DE_SEGUIR;
+        }
+        if (SOLICITACOES_RECENTES.matcher(c).find()) {
+            return CategoriaDeDados.SOLICITACOES_RECENTES;
+        }
+        if (SOLICITACOES_RECEBIDAS.matcher(c).find()) {
+            return CategoriaDeDados.SOLICITACOES_RECEBIDAS;
         }
         if (OUTRAS_LISTAS.matcher(c).find() || c.contains("followers_and_following/")) {
             return CategoriaDeDados.RELACIONAMENTOS_OUTROS;

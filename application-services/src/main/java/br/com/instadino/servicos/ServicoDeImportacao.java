@@ -111,6 +111,9 @@ public final class ServicoDeImportacao {
             case BLOQUEADO -> CategoriaDeDados.BLOQUEADOS;
             case RESTRITO -> CategoriaDeDados.RESTRITOS;
             case FAVORITO -> CategoriaDeDados.FAVORITOS;
+            case DEIXEI_DE_SEGUIR_RECENTE -> CategoriaDeDados.DEIXEI_DE_SEGUIR;
+            case SOLICITACAO_RECENTE -> CategoriaDeDados.SOLICITACOES_RECENTES;
+            case SOLICITACAO_RECEBIDA -> CategoriaDeDados.SOLICITACOES_RECEBIDAS;
         };
     }
 }

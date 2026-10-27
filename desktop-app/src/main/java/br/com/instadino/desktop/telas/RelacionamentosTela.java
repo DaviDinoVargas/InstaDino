@@ -326,7 +326,9 @@ final class RelacionamentosTela extends TelaBase {
         barraDeAbas.getChildren().clear();
         for (VisaoDeRelacionamento v : VisaoDeRelacionamento.values()) {
             boolean opcional = v == VisaoDeRelacionamento.PENDENTES || v == VisaoDeRelacionamento.BLOQUEADOS
-                    || v == VisaoDeRelacionamento.RESTRITOS || v == VisaoDeRelacionamento.FAVORITOS;
+                    || v == VisaoDeRelacionamento.RESTRITOS || v == VisaoDeRelacionamento.FAVORITOS
+                    || v == VisaoDeRelacionamento.DEIXEI_DE_SEGUIR || v == VisaoDeRelacionamento.SOLICITACOES_RECENTES
+                    || v == VisaoDeRelacionamento.SOLICITACOES_RECEBIDAS;
             if (opcional && v != visao) {
                 int total = ui.local().relacionamentos().consultar(new ConsultaDeRelacionamentos(v, "", Ordenacao.ALFABETICA, 0, 1, null, null, false)).total();
                 if (total == 0) {
@@ -417,6 +419,14 @@ final class RelacionamentosTela extends TelaBase {
         if (visao != VisaoDeRelacionamento.SEGUINDO) {
             ui.local().relacionamentos().painel().ifPresent(p -> p.avisosDeCobertura()
                     .forEach(aviso -> avisoLimitacao.getChildren().add(Ui.caixa(Ui.Tipo.AVISO, aviso))));
+        }
+        if (visao == VisaoDeRelacionamento.DEIXEI_DE_SEGUIR) {
+            avisoLimitacao.getChildren().add(Ui.caixa(Ui.Tipo.INFO, "Registro do próprio Instagram das contas que VOCÊ deixou de seguir. "
+                    + "Cobre apenas um período recente definido pela plataforma e NÃO informa quem deixou de seguir você."));
+        }
+        if (visao == VisaoDeRelacionamento.SOLICITACOES_RECENTES || visao == VisaoDeRelacionamento.SOLICITACOES_RECEBIDAS) {
+            avisoLimitacao.getChildren().add(Ui.caixa(Ui.Tipo.INFO, "Registro do próprio Instagram, limitado a um período recente. "
+                    + "Não é um histórico completo de solicitações."));
         }
         if (visao == VisaoDeRelacionamento.NAO_SEGUEM_DE_VOLTA || visao == VisaoDeRelacionamento.VOCE_NAO_SEGUE) {
             avisoLimitacao.getChildren().add(Ui.caixa(Ui.Tipo.AVISO, AnaliseDeSeguidores.LIMITACAO));

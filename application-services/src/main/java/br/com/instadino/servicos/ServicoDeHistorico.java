@@ -161,6 +161,9 @@ public final class ServicoDeHistorico {
             case BLOQUEADO -> "BLOQUEADOS";
             case RESTRITO -> "RESTRITOS";
             case FAVORITO -> "FAVORITOS";
+            case DEIXEI_DE_SEGUIR_RECENTE -> "DEIXEI_DE_SEGUIR";
+            case SOLICITACAO_RECENTE -> "SOLICITACOES_RECENTES";
+            case SOLICITACAO_RECEBIDA -> "SOLICITACOES_RECEBIDAS";
         };
         if (!importacao.categorias().containsKey(categoria)) {
             return false;

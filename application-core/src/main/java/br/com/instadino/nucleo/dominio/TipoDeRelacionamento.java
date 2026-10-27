@@ -7,7 +7,11 @@ public enum TipoDeRelacionamento {
     SOLICITACAO_PENDENTE("Solicitações de seguimento pendentes"),
     BLOQUEADO("Perfis bloqueados"),
     RESTRITO("Perfis restritos"),
-    FAVORITO("Amigos próximos");
+    FAVORITO("Amigos próximos"),
+    /** Contas que o PRÓPRIO USUÁRIO deixou de seguir recentemente (registro do Instagram, período recente). */
+    DEIXEI_DE_SEGUIR_RECENTE("Contas que você deixou de seguir recentemente"),
+    SOLICITACAO_RECENTE("Solicitações de seguimento recentes"),
+    SOLICITACAO_RECEBIDA("Solicitações de seguimento recebidas");
 
     private final String rotulo;
 
