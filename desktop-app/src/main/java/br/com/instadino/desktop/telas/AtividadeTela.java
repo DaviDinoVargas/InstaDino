@@ -56,7 +56,9 @@ final class AtividadeTela extends TelaBase {
                     Ui.primario("Conhecer o Premium", () -> ui.roteador().ir(Destino.PREMIUM))));
             return;
         }
-        if (!ui.local().atividade().temDados()) {
+        boolean comAtividade = ui.local().atividade().temDados();
+        boolean comInteresses = ui.local().atividade().temInteresses();
+        if (!comAtividade && !comInteresses) {
             area.getChildren().add(Ui.cartao(Ui.estadoVazio("Sem dados de atividade",
                     "A importação mais recente não tem registros de atividade. Importe uma exportação em JSON que inclua atividade "
                             + "(curtidas, comentários etc.). Importações feitas no plano Free não guardam atividade: importe de novo depois de assinar.",
@@ -64,8 +66,14 @@ final class AtividadeTela extends TelaBase {
             return;
         }
         area.getChildren().add(Ui.caixa(Ui.Tipo.INFO, ServicoDeAtividade.LIMITACAO));
-        TabPane abas = new TabPane(new Tab("Resumo", resumo()), new Tab("Calendário", calendario()), new Tab("Ranking", ranking()),
-                new Tab("Pesquisar", pesquisa()), new Tab("Cruzamentos", cruzamentos()));
+        TabPane abas = new TabPane();
+        if (comAtividade) {
+            abas.getTabs().addAll(new Tab("Resumo", resumo()), new Tab("Calendário", calendario()), new Tab("Ranking", ranking()),
+                    new Tab("Pesquisar", pesquisa()), new Tab("Cruzamentos", cruzamentos()));
+        }
+        if (comInteresses) {
+            abas.getTabs().add(new Tab("Anúncios e interesses", interesses()));
+        }
         abas.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         abas.setMinHeight(560);
         area.getChildren().add(abas);
@@ -154,6 +162,34 @@ final class AtividadeTela extends TelaBase {
         categoria.setOnAction(e -> desenhar.run());
         desenhar.run();
         return new VBox(12, new HBox(8, new Label("Categoria:"), categoria), conteudo);
+    }
+
+    // ---- anúncios e interesses ----
+
+    private VBox interesses() {
+        VBox conteudo = new VBox(12, Ui.pequeno(ServicoDeAtividade.LIMITACAO_DE_INTERESSES));
+        for (var grupo : ui.local().atividade().interesses(200)) {
+            TableView<ServicoDeAtividade.ItemDeInteresse> tabela = new TableView<>();
+            tabela.getColumns().add(coluna("Item", i -> i.texto(), 420));
+            tabela.getColumns().add(coluna("Vezes", i -> Formatos.inteiro(i.vezes()), 100));
+            tabela.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+            tabela.getItems().setAll(grupo.itens());
+            tabela.setPrefHeight(Math.min(360, 40 + Math.max(1, grupo.itens().size()) * 36));
+            tabela.setAccessibleText("Itens do arquivo " + grupo.arquivo());
+            conteudo.getChildren().add(Ui.cartao(Ui.tituloDeCartao(rotuloDeArquivo(grupo.arquivo()) + " (" + Formatos.inteiro(grupo.total()) + ")"),
+                    Ui.pequeno("Arquivo de origem: " + grupo.arquivo()), tabela));
+        }
+        return conteudo;
+    }
+
+    /** Nomes conhecidos de arquivos de anúncios; os demais aparecem com o nome do arquivo. */
+    private static String rotuloDeArquivo(String arquivo) {
+        return switch (arquivo) {
+            case "your_topics", "inferred_topics", "topics_your_topics" -> "Temas que o Instagram associa a você";
+            case "advertisers_using_your_activity_or_information", "advertisers_you've_interacted_with" -> "Anunciantes ligados à sua atividade";
+            case "ads_viewed", "ads_clicked" -> "Anúncios";
+            default -> arquivo;
+        };
     }
 
     // ---- ranking ----

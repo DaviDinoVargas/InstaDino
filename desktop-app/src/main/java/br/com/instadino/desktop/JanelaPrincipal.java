@@ -116,6 +116,8 @@ public final class JanelaPrincipal {
                 item(Destino.HISTORICO, "historico", "Histórico"),
                 item(Destino.BIBLIOTECA, "biblioteca", "Biblioteca"),
                 item(Destino.ATIVIDADE, "atividade", "Atividade"),
+                item(Destino.MENSAGENS, "mensagens", "Mensagens"),
+                item(Destino.EXPLORADOR, "explorador", "Explorador"),
                 item(Destino.RELATORIOS, "relatorio", "Relatórios"),
                 secao("CONTA"),
                 item(Destino.CONTA, "usuario", "Conta"),

@@ -232,4 +232,21 @@ class AtividadeEConteudoServicosTest {
         assertThatThrownBy(() -> relatorio(new ServicoDeRelatorios.Opcoes(false, false, false, false, false, false, false, false, true, false)))
                 .isInstanceOf(AcessoNegadoException.class);
     }
+
+    @Test
+    void interessesAgrupamPorArquivoEFicamForaDaAtividadeComum() {
+        var c = new ConstrutorDeExportacao().seguidores("ana").seguindo("ana");
+        c.arquivo("conta/ads_information/instagram_ads_and_businesses/your_topics.json",
+                "{\"topics_your_topics\":[{\"string_map_data\":{\"Name\":{\"value\":\"Fitness\"}}},{\"string_map_data\":{\"Name\":{\"value\":\"fitness\"}}},{\"string_map_data\":{\"Name\":{\"value\":\"Viagens\"}}}]}");
+        importar(c);
+        assertThat(ctx.atividade().temDados()).as("anúncios não contam como atividade comum").isFalse();
+        assertThat(ctx.atividade().temInteresses()).isTrue();
+        var grupos = ctx.atividade().interesses(10);
+        assertThat(grupos).hasSize(1);
+        assertThat(grupos.get(0).arquivo()).isEqualTo("your_topics");
+        assertThat(grupos.get(0).total()).isEqualTo(3);
+        assertThat(grupos.get(0).itens()).extracting(ServicoDeAtividade.ItemDeInteresse::vezes).containsExactly(2, 1);
+        licenca.set(EstadoDaLicenca.GRATUITO);
+        assertThatThrownBy(() -> ctx.atividade().interesses(10)).isInstanceOf(AcessoNegadoException.class);
+    }
 }

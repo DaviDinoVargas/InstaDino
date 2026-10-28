@@ -166,6 +166,46 @@ public final class RepositorioDeAtividade {
         });
     }
 
+    /** Arquivos de origem (subtipos) da categoria, com a quantidade de registros de cada um. */
+    public List<ContaContada> subtipos(String importacaoId, String categoria) {
+        return banco.emTransacao(c -> {
+            List<ContaContada> lista = new ArrayList<>();
+            try (PreparedStatement p = c.prepareStatement(
+                    "SELECT subtipo, count(*) AS n FROM atividade WHERE importacao_id = ? AND categoria = ? AND subtipo IS NOT NULL "
+                            + "GROUP BY subtipo ORDER BY n DESC, subtipo")) {
+                p.setString(1, importacaoId);
+                p.setString(2, categoria);
+                try (ResultSet r = p.executeQuery()) {
+                    while (r.next()) {
+                        lista.add(new ContaContada(r.getString(1), r.getInt(2)));
+                    }
+                }
+            }
+            return lista;
+        });
+    }
+
+    /** Textos (ou, na falta, contas) de um subtipo (agrupados sem diferenciar maiúsculas), do mais frequente ao menos, na grafia mais antiga encontrada. */
+    public List<ContaContada> textosDoSubtipo(String importacaoId, String categoria, String subtipo, int limite) {
+        return banco.emTransacao(c -> {
+            List<ContaContada> lista = new ArrayList<>();
+            try (PreparedStatement p = c.prepareStatement(
+                    "SELECT min(coalesce(texto, conta)), count(*) AS n FROM atividade WHERE importacao_id = ? AND categoria = ? AND subtipo = ? "
+                            + "AND coalesce(texto, conta) IS NOT NULL GROUP BY lower(coalesce(texto, conta)) ORDER BY n DESC, lower(coalesce(texto, conta)) LIMIT ?")) {
+                p.setString(1, importacaoId);
+                p.setString(2, categoria);
+                p.setString(3, subtipo);
+                p.setInt(4, Math.max(1, Math.min(limite, 2000)));
+                try (ResultSet r = p.executeQuery()) {
+                    while (r.next()) {
+                        lista.add(new ContaContada(r.getString(1), r.getInt(2)));
+                    }
+                }
+            }
+            return lista;
+        });
+    }
+
     public Pagina<Linha> buscar(String importacaoId, Filtro filtro, int pagina, int tamanho) {
         int tam = Math.max(1, Math.min(tamanho, TAMANHO_MAXIMO_DE_PAGINA));
         int de = Math.max(pagina, 0) * tam;

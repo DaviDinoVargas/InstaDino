@@ -343,7 +343,7 @@ class InterfaceTest {
     void navegacaoPorTecladoEstaDisponivel() {
         abrir();
         var botoes = FxTeste.naInterface(() -> FxTeste.todos(raiz()).stream().filter(n -> n.getStyleClass().contains("botao-nav")).toList());
-        assertThat(botoes).hasSize(11);
+        assertThat(botoes).hasSize(13);
         assertThat(botoes).allMatch(Node::isFocusTraversable);
         assertThat(FxTeste.naInterface(() -> palco.getScene().getAccelerators().size())).isGreaterThanOrEqualTo(10);
     }

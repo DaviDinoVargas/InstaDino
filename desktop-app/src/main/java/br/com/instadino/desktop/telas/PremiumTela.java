@@ -53,7 +53,9 @@ final class PremiumTela extends TelaBase {
         RECURSOS.put(Funcionalidade.MULTIPLOS_PERFIS, new Recurso("Múltiplos perfis locais", true));
         RECURSOS.put(Funcionalidade.BIBLIOTECA_DE_CONTEUDO, new Recurso("Biblioteca de conteúdo", true));
         RECURSOS.put(Funcionalidade.ANALISE_DE_ATIVIDADE, new Recurso("Análise de atividade", true));
-        RECURSOS.put(Funcionalidade.ARQUIVO_DE_MENSAGENS, new Recurso("Arquivo de mensagens (opcional, com consentimento)", false));
+        RECURSOS.put(Funcionalidade.ARQUIVO_DE_MENSAGENS, new Recurso("Estatísticas de mensagens (opcional, com consentimento)", true));
+        RECURSOS.put(Funcionalidade.EXPLORADOR_DE_DADOS, new Recurso("Explorador de dados exportados", true));
+        RECURSOS.put(Funcionalidade.PAINEIS_PERSONALIZADOS, new Recurso("Painéis personalizados", true));
         RECURSOS.put(Funcionalidade.BACKUP_PROTEGIDO, new Recurso("Backup local protegido", true));
     }
 

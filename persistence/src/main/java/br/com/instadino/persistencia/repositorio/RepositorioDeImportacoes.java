@@ -25,7 +25,15 @@ public final class RepositorioDeImportacoes {
     public record NovaImportacao(long perfilId, String versaoDoParser, String origem, String nomeDoArquivo, Long tamanhoEmBytes,
                                  int registrosValidos, int registrosInvalidos, Map<String, int[]> categorias,
                                  List<Relacionamento> relacionamentos, String resumoJson, List<AtividadeGravada> atividades,
-                                 List<PublicacaoGravada> publicacoes) {
+                                 List<PublicacaoGravada> publicacoes, List<ConversaGravada> conversas) {
+
+        public NovaImportacao(long perfilId, String versaoDoParser, String origem, String nomeDoArquivo, Long tamanhoEmBytes,
+                              int registrosValidos, int registrosInvalidos, Map<String, int[]> categorias,
+                              List<Relacionamento> relacionamentos, String resumoJson, List<AtividadeGravada> atividades,
+                              List<PublicacaoGravada> publicacoes) {
+            this(perfilId, versaoDoParser, origem, nomeDoArquivo, tamanhoEmBytes, registrosValidos, registrosInvalidos, categorias,
+                    relacionamentos, resumoJson, atividades, publicacoes, List.of());
+        }
 
         /** Importação sem atividade nem conteúdo (apenas relacionamentos). */
         public NovaImportacao(long perfilId, String versaoDoParser, String origem, String nomeDoArquivo, Long tamanhoEmBytes,
@@ -38,6 +46,14 @@ public final class RepositorioDeImportacoes {
 
     /** Registro de atividade a gravar; {@code categoria} é o nome da categoria de dados. */
     public record AtividadeGravada(String categoria, String subtipo, String conta, String texto, String referencia, Long instante) {
+    }
+
+    /** Agregados de uma conversa; nenhum texto de mensagem. {@code enviadas} é -1 quando o titular não foi identificado. */
+    public record ConversaGravada(String titulo, int participantes, int total, int enviadas, int midias, Long primeiro, Long ultimo,
+                                  List<MesGravado> meses) {
+    }
+
+    public record MesGravado(String mes, int total, int enviadas) {
     }
 
     public record MidiaGravada(String caminho, String tipo, Long tamanho) {
@@ -124,6 +140,7 @@ public final class RepositorioDeImportacoes {
             }
             gravarAtividades(c, id, nova.atividades());
             gravarPublicacoes(c, id, nova.publicacoes());
+            gravarConversas(c, id, nova.conversas());
             if (manterNoMaximo > 0) {
                 try (PreparedStatement p = c.prepareStatement(
                         "DELETE FROM importacao WHERE perfil_id = ? AND id NOT IN ("
@@ -164,6 +181,41 @@ public final class RepositorioDeImportacoes {
                 }
             }
             p.executeBatch();
+        }
+    }
+
+    private static void gravarConversas(java.sql.Connection c, String id, List<ConversaGravada> conversas) throws java.sql.SQLException {
+        if (conversas.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement p = c.prepareStatement(
+                "INSERT INTO conversa (importacao_id, titulo, participantes, total, enviadas, midias, primeiro, ultimo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                PreparedStatement.RETURN_GENERATED_KEYS);
+             PreparedStatement m = c.prepareStatement("INSERT INTO conversa_mes (conversa_id, mes, total, enviadas) VALUES (?, ?, ?, ?)")) {
+            for (ConversaGravada conversa : conversas) {
+                p.setString(1, id);
+                p.setString(2, conversa.titulo().length() > 200 ? conversa.titulo().substring(0, 200) : conversa.titulo());
+                p.setInt(3, conversa.participantes());
+                p.setInt(4, conversa.total());
+                p.setInt(5, conversa.enviadas());
+                p.setInt(6, conversa.midias());
+                RepositorioDeAtividade.numero(p, 7, conversa.primeiro());
+                RepositorioDeAtividade.numero(p, 8, conversa.ultimo());
+                p.executeUpdate();
+                long conversaId;
+                try (ResultSet k = p.getGeneratedKeys()) {
+                    k.next();
+                    conversaId = k.getLong(1);
+                }
+                for (MesGravado mes : conversa.meses()) {
+                    m.setLong(1, conversaId);
+                    m.setString(2, mes.mes());
+                    m.setInt(3, mes.total());
+                    m.setInt(4, mes.enviadas());
+                    m.addBatch();
+                }
+                m.executeBatch();
+            }
         }
     }
 

@@ -2,6 +2,7 @@ package br.com.instadino.importacao;
 
 import br.com.instadino.importacao.ImportacaoRejeitadaException.Motivo;
 import br.com.instadino.importacao.parser.LeitorDeAtividade;
+import br.com.instadino.importacao.parser.LeitorDeMensagens;
 import br.com.instadino.importacao.parser.LeitorDePublicacoes;
 import br.com.instadino.importacao.parser.LeitorDeRelacionamentos;
 import br.com.instadino.importacao.parser.ResultadoDeLeitura;
@@ -34,18 +35,20 @@ import java.util.zip.ZipFile;
  */
 public final class ImportadorDeExportacao {
 
-    public static final String VERSAO_DO_PARSER = "1.4.0";
+    public static final String VERSAO_DO_PARSER = "1.6.0";
 
     /** Categorias de atividade lidas por {@link LeitorDeAtividade}. */
     public static final Set<CategoriaDeDados> ATIVIDADES = java.util.Collections.unmodifiableSet(EnumSet.of(CategoriaDeDados.CURTIDAS,
             CategoriaDeDados.COMENTARIOS, CategoriaDeDados.SALVOS, CategoriaDeDados.PESQUISAS, CategoriaDeDados.INTERACOES_STORIES,
-            CategoriaDeDados.VISUALIZACOES));
+            CategoriaDeDados.VISUALIZACOES, CategoriaDeDados.ANUNCIOS_E_PREFERENCIAS));
     /** Categorias de conteúdo lidas por {@link LeitorDePublicacoes}. */
     public static final Set<CategoriaDeDados> CONTEUDOS = java.util.Collections.unmodifiableSet(EnumSet.of(CategoriaDeDados.PUBLICACOES,
             CategoriaDeDados.STORIES, CategoriaDeDados.REELS));
     /** Limites de volume por importação, para que uma exportação enorme não esgote a memória. */
     public static final int MAXIMO_DE_REGISTROS_DE_ATIVIDADE = 1_000_000;
     public static final int MAXIMO_DE_PUBLICACOES = 200_000;
+
+    private static final java.util.regex.Pattern ARQUIVO_DE_MENSAGENS = java.util.regex.Pattern.compile("(^|/)message_\\d+\\.json$");
 
     private static final Map<CategoriaDeDados, TipoDeRelacionamento> TIPOS = new EnumMap<>(CategoriaDeDados.class);
 
@@ -83,6 +86,8 @@ public final class ImportadorDeExportacao {
 
         List<EntradaInventariada> alvos = inventario.entradas().stream()
                 .filter(e -> e.categoria().processadaNestaVersao() && configuracao.permite(e.categoria()))
+                .filter(e -> e.categoria() != CategoriaDeDados.MENSAGENS
+                        || ARQUIVO_DE_MENSAGENS.matcher(e.caminho().toLowerCase(java.util.Locale.ROOT)).find())
                 .filter(e -> e.formato() == FormatoDeArquivo.JSON || e.formato() == FormatoDeArquivo.HTML)
                 .sorted(Comparator.comparing(EntradaInventariada::caminho))
                 .toList();
@@ -99,6 +104,8 @@ public final class ImportadorDeExportacao {
         List<RegistroDeAtividade> atividades = new ArrayList<>();
         List<Publicacao> publicacoes = new ArrayList<>();
         java.util.function.Function<String, Publicacao.MidiaDePublicacao> resolvedorDeMidia = resolvedorDeMidia(inventario);
+        AcumuladorDeConversas conversas = new AcumuladorDeConversas();
+        TotaisDeMensagens totaisDeMensagens = new TotaisDeMensagens();
 
         try (ZipFile arquivo = new ZipFile(zip.toFile(), StandardCharsets.UTF_8)) {
             int numero = 0;
@@ -110,7 +117,8 @@ public final class ImportadorDeExportacao {
                 ZipEntry entrada = arquivo.getEntry(alvo.nomeOriginal());
                 boolean ehAtividade = ATIVIDADES.contains(alvo.categoria());
                 boolean ehConteudo = CONTEUDOS.contains(alvo.categoria());
-                if (entrada == null || (tipo == null && !ehAtividade && !ehConteudo)) {
+                boolean ehMensagem = alvo.categoria() == CategoriaDeDados.MENSAGENS;
+                if (entrada == null || (tipo == null && !ehAtividade && !ehConteudo && !ehMensagem)) {
                     incompletas.add(alvo.categoria());
                     avisos.add("Um arquivo de " + alvo.categoria().rotulo() + " não pôde ser localizado.");
                     continue;
@@ -130,7 +138,16 @@ public final class ImportadorDeExportacao {
                             avisos.add("Arquivos de " + alvo.categoria().rotulo() + " em HTML não são lidos. Peça a exportação em JSON.");
                             continue;
                         }
-                        if (ehAtividade) {
+                        if (ehMensagem) {
+                            var r = LeitorDeMensagens.ler(limitada, cancelamento);
+                            totalLido += limitada.bytesLidos();
+                            totaisDeMensagens.somar(limitada.bytesLidos(), r.contagem());
+                            String caminho = alvo.caminho();
+                            if (!conversas.adicionar(caminho.substring(0, Math.max(caminho.lastIndexOf('/'), 0)), r)) {
+                                incompletas.add(alvo.categoria());
+                            }
+                            invalidos += r.contagem().rejeitadosPorMotivo().values().stream().mapToInt(Integer::intValue).sum();
+                        } else if (ehAtividade) {
                             var r = LeitorDeAtividade.ler(limitada, alvo.categoria(), subtipo(alvo.caminho()), cancelamento);
                             totalLido += limitada.bytesLidos();
                             registrarDiagnostico(diagnosticos, alvo, limitada.bytesLidos(), r.contagem());
@@ -209,6 +226,14 @@ public final class ImportadorDeExportacao {
             relacionamentos.put(e.getKey(), lista);
             validos += lista.size();
         }
+        totaisDeMensagens.diagnostico().ifPresent(diagnosticos::add);
+        List<ResumoDeConversa> resumosDeConversas = conversas.finalizar();
+        if (conversas.limiteAtingido()) {
+            avisos.add("Há conversas demais; foram mantidas as primeiras " + AcumuladorDeConversas.MAXIMO_DE_CONVERSAS + ".");
+        }
+        if (!resumosDeConversas.isEmpty() && !resumosDeConversas.get(0).titularIdentificado()) {
+            avisos.add("Não foi possível identificar qual participante é você (há uma única conversa); as contagens de mensagens enviadas e recebidas ficam indisponíveis.");
+        }
         if (invalidos > 0) {
             avisos.add(invalidos + " registro(s) sem nome de usuário válido foram descartados.");
         }
@@ -230,7 +255,7 @@ public final class ImportadorDeExportacao {
             avisos.add("A lista \"" + c.rotulo() + "\" pode estar incompleta; comparações que dependem dela devem ser interpretadas com cautela.");
         }
         return new ResultadoDaImportacao(VERSAO_DO_PARSER, inventario, relacionamentos, processadas, incompletas, validos,
-                invalidos, duplicados, invalidosPorMotivo, avisos, inicio.decorrido(), diagnosticos, cobertura, atividades, publicacoes);
+                invalidos, duplicados, invalidosPorMotivo, avisos, inicio.decorrido(), diagnosticos, cobertura, atividades, publicacoes, resumosDeConversas);
     }
 
     private static DiagnosticoDeArquivo erroDeArquivo(EntradaInventariada alvo, String motivo) {

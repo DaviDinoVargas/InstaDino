@@ -56,14 +56,20 @@ public final class LeitorDeAtividade {
         coletar(el.get("string_list_data"), campos, 0);
         coletar(el.get("string_map_data"), campos, 0);
         coletar(el.get("label_values"), campos, 0);
-        Long instante = instante(el.get("timestamp")).or(() -> instante(el.get("creation_timestamp")))
+        Long instante = instante(el.get("timestamp")).or(() -> instante(el.get("timestamp_ms"))).or(() -> instante(el.get("creation_timestamp")))
                 .or(() -> campos.stream().map(Campo::instante).filter(java.util.Objects::nonNull).findFirst()).orElse(null);
         String titulo = texto(el.get("title"));
 
         String conta = null;
         String texto = null;
-        if (categoria == CategoriaDeDados.COMENTARIOS || categoria == CategoriaDeDados.PESQUISAS) {
-            Campo campoDeTexto = escolherTexto(campos, categoria);
+        if (categoria == CategoriaDeDados.ANUNCIOS_E_PREFERENCIAS) {
+            // interesses e anunciantes: o nome do tema ou do anunciante é o texto; só ligamos a uma conta quando há um perfil explícito
+            Campo campoDeTexto = escolherTexto(campos, categoria, false); // sem dica de rótulo, não adivinha: o valor pode ser uma conta
+            texto = campoDeTexto != null ? CorretorDeTexto.corrigir(campoDeTexto.valor()) : primeiroTextoDoElemento(el, titulo);
+            final Campo escolhido = campoDeTexto;
+            conta = contaDe(null, campos.stream().filter(c -> c != escolhido).toList(), categoria);
+        } else if (categoria == CategoriaDeDados.COMENTARIOS || categoria == CategoriaDeDados.PESQUISAS) {
+            Campo campoDeTexto = escolherTexto(campos, categoria, true);
             texto = campoDeTexto == null ? null : CorretorDeTexto.corrigir(campoDeTexto.valor());
             final Campo escolhido = campoDeTexto;
             conta = contaDe(titulo, campos.stream().filter(c -> c != escolhido).toList(), categoria);
@@ -80,13 +86,17 @@ public final class LeitorDeAtividade {
 
     // ---- escolhas ----
 
-    private static Campo escolherTexto(List<Campo> campos, CategoriaDeDados categoria) {
-        String[] dicas = categoria == CategoriaDeDados.COMENTARIOS
-                ? new String[] {"comment", "coment"} : new String[] {"search", "busca", "pesquis", "term", "query"};
+    private static Campo escolherTexto(List<Campo> campos, CategoriaDeDados categoria, boolean adivinhar) {
+        String[] dicas = categoria == CategoriaDeDados.COMENTARIOS ? new String[] {"comment", "coment"}
+                : categoria == CategoriaDeDados.ANUNCIOS_E_PREFERENCIAS ? new String[] {"name", "nome", "topic", "tema", "interest", "interesse", "advertiser", "anunciante"}
+                : new String[] {"search", "busca", "pesquis", "term", "query"};
         for (Campo c : campos) {
             if (c.rotulo() != null && !c.valor().isBlank() && contemAlgum(c.rotulo(), dicas)) {
                 return c;
             }
+        }
+        if (!adivinhar) {
+            return null;
         }
         // sem dica de rótulo: o maior texto que não seja endereço
         Campo maior = null;
@@ -96,6 +106,17 @@ public final class LeitorDeAtividade {
             }
         }
         return maior;
+    }
+
+    /** Formatos planos, como {"advertiser_name": "..."}: usa o primeiro campo textual conhecido do próprio elemento. */
+    private static String primeiroTextoDoElemento(JsonNode el, String titulo) {
+        for (String chave : new String[] {"advertiser_name", "name", "topic", "title"}) {
+            JsonNode v = el.get(chave);
+            if (v != null && v.isTextual() && !v.asText().isBlank()) {
+                return CorretorDeTexto.corrigir(v.asText());
+            }
+        }
+        return titulo == null || titulo.isBlank() ? null : CorretorDeTexto.corrigir(titulo);
     }
 
     private static String contaDe(String titulo, List<Campo> campos, CategoriaDeDados categoria) {

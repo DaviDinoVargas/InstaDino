@@ -22,9 +22,9 @@ public enum CategoriaDeDados {
     PESQUISAS("Pesquisas recentes", false, true),
     INTERACOES_STORIES("Interações com stories", false, true),
     VISUALIZACOES("Visualizações de posts e vídeos", false, true),
-    MENSAGENS("Mensagens", true, false),
+    MENSAGENS("Mensagens", true, true),
     SEGURANCA("Segurança e acesso", true, false),
-    ANUNCIOS_E_PREFERENCIAS("Anúncios e preferências", false, false),
+    ANUNCIOS_E_PREFERENCIAS("Anúncios e interesses", false, true),
     MIDIA("Fotos e vídeos", false, false),
     DESCONHECIDA("Arquivos não reconhecidos", false, false);
 
