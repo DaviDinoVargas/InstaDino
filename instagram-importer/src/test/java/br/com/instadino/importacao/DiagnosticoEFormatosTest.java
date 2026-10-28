@@ -1,0 +1,261 @@
+package br.com.instadino.importacao;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import br.com.instadino.fixtures.ConstrutorDeExportacao;
+import br.com.instadino.nucleo.dominio.TipoDeRelacionamento;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+/** Formatos alternativos de listas e o diagnóstico por arquivo (estrutura e contagens, nunca nomes de usuário). */
+class DiagnosticoEFormatosTest {
+
+    @TempDir
+    Path pasta;
+
+    private ResultadoDaImportacao importar(ConstrutorDeExportacao c) {
+        Path zip = c.escreverEm(pasta.resolve("e.zip"));
+        return new ImportadorDeExportacao(LimitesDeImportacao.padrao()).importar(zip, ConfiguracaoDeImportacao.padrao(), new Cancelamento(), OuvinteDeProgresso.NENHUM);
+    }
+
+    private static List<String> nomes(ResultadoDaImportacao r, TipoDeRelacionamento t) {
+        return r.lista(t).stream().map(x -> x.usuario().valor()).toList();
+    }
+
+    // ---- label_values (formato mais recente) ----
+
+    @Test
+    void leSolicitacoesPendentesNoFormatoLabelValues() {
+        var c = new ConstrutorDeExportacao().seguidores("ana").seguindo("ana");
+        c.arquivo("connections/followers_and_following/pending_follow_requests.json", """
+                {"relationships_follow_requests_sent": [
+                  {"timestamp": 1704067200, "media": [], "label_values": [
+                     {"label": "URL", "value": "https://www.instagram.com/carla_x", "href": "https://www.instagram.com/carla_x"},
+                     {"label": "Nome", "value": "Carla Silva"}]},
+                  {"timestamp": 1704153600, "media": [], "label_values": [
+                     {"label": "Nome de usuário", "value": "diego.m"}]},
+                  {"timestamp": 1704153600, "media": [], "label_values": [
+                     {"label": "Nome", "value": "Sem usuário Algum"}]}
+                ]}""");
+        ResultadoDaImportacao r = importar(c);
+        assertThat(nomes(r, TipoDeRelacionamento.SOLICITACAO_PENDENTE)).containsExactly("carla_x", "diego.m");
+        assertThat(r.lista(TipoDeRelacionamento.SOLICITACAO_PENDENTE).get(0).instanteEmSegundos()).isEqualTo(1704067200L);
+        assertThat(r.registrosInvalidos()).isEqualTo(1);
+    }
+
+    @Test
+    void leSeguidoresSemValueEComHrefDeUsuarioCom_u() {
+        var c = new ConstrutorDeExportacao().seguindo("ana");
+        c.arquivo("connections/followers_and_following/followers_1.json", """
+                [{"title": "", "media_list_data": [], "string_list_data": [{"href": "https://www.instagram.com/_u/bruno_1", "timestamp": 1700000000}]},
+                 {"title": "carla", "string_list_data": []},
+                 {"string_list_data": [{"href": "https://www.instagram.com/diego", "value": "diego", "timestamp": 1700000001}]}]""");
+        ResultadoDaImportacao r = importar(c);
+        assertThat(nomes(r, TipoDeRelacionamento.SEGUIDOR)).containsExactly("bruno_1", "carla", "diego");
+    }
+
+    // ---- diagnóstico ----
+
+    @Test
+    void diagnosticoMostraContagensPorArquivoEOMotivoDosDescartes() {
+        var c = new ConstrutorDeExportacao();
+        c.arquivo("conta-de-maria-2026/connections/followers_and_following/followers_1.json", """
+                [{"title":"","string_list_data":[{"href":"https://www.instagram.com/ana","value":"ana","timestamp":1}]},
+                 {"title":"","string_list_data":[{"href":"https://www.instagram.com/ana","value":"ana","timestamp":2}]},
+                 {"title":"Nome Com Espaço","string_list_data":[{"href":"https://example.com/x","value":"Nome Com Espaço"}]}]""");
+        c.arquivo("conta-de-maria-2026/connections/followers_and_following/following.json",
+                "{\"relationships_following\":[{\"title\":\"bruno\",\"string_list_data\":[{\"href\":\"https://www.instagram.com/_u/bruno\",\"timestamp\":5}]}]}");
+        ResultadoDaImportacao r = importar(c);
+        assertThat(r.diagnosticos()).hasSize(2);
+        var seguidores = r.diagnosticos().stream().filter(d -> d.categoria() == CategoriaDeDados.SEGUIDORES).findFirst().orElseThrow();
+        assertThat(seguidores.elementosLidos()).isEqualTo(3);
+        assertThat(seguidores.validos()).isEqualTo(1);
+        assertThat(seguidores.duplicados()).isEqualTo(1);
+        assertThat(seguidores.descartados()).isEqualTo(1);
+        assertThat(seguidores.invalidosPorMotivo()).containsKey("sem nome de usuário válido");
+        assertThat(seguidores.erro()).isNull();
+    }
+
+    @Test
+    void diagnosticoNuncaTrazNomesDeUsuarioNemOValorDosCampos() {
+        var c = new ConstrutorDeExportacao();
+        c.arquivo("conta-de-maria-2026/connections/followers_and_following/followers_1.json", """
+                [{"title":"","string_list_data":[{"href":"https://www.instagram.com/segredo_usuario","value":"segredo_usuario","timestamp":1}]}]""");
+        ResultadoDaImportacao r = importar(c);
+        String texto = r.diagnosticos().stream().map(DiagnosticoDeArquivo::comoTexto).reduce("", String::concat);
+        assertThat(texto).doesNotContain("segredo_usuario").doesNotContain("maria").doesNotContain("instagram.com");
+        // mas mostra a FORMA, que é o que permite entender um formato novo
+        assertThat(texto).contains("{string_list_data:[1]{href:texto,timestamp:num,value:texto},title:vazio}").contains("followers_1.json");
+    }
+
+    @Test
+    void caminhoDoDiagnosticoNaoTemAPastaRaizDaExportacao() {
+        assertThat(DiagnosticoDeArquivo.caminhoSemRaiz("instagram-maria-2026-01-01-abc/connections/followers_and_following/followers_1.json"))
+                .isEqualTo("connections/followers_and_following/followers_1.json");
+        assertThat(DiagnosticoDeArquivo.caminhoSemRaiz("followers_and_following/following.json")).isEqualTo("followers_and_following/following.json");
+        assertThat(DiagnosticoDeArquivo.caminhoSemRaiz("pasta-do-usuario/qualquer/coisa/arquivo.json")).isEqualTo("coisa/arquivo.json");
+        assertThat(DiagnosticoDeArquivo.caminhoSemRaiz("arquivo.json")).isEqualTo("arquivo.json");
+    }
+
+    @Test
+    void arquivoComEstruturaInesperadaApareceNoDiagnosticoComErro() {
+        var c = new ConstrutorDeExportacao().seguindo("ana");
+        c.arquivo("connections/followers_and_following/followers_1.json", "\"isto não é uma lista\"");
+        ResultadoDaImportacao r = importar(c);
+        var d = r.diagnosticos().stream().filter(x -> x.categoria() == CategoriaDeDados.SEGUIDORES).findFirst().orElseThrow();
+        assertThat(d.erro()).isNotNull();
+        assertThat(r.categoriasIncompletas()).contains(CategoriaDeDados.SEGUIDORES);
+    }
+
+    @Test
+    void formasDistintasSaoContadasELimitadas() {
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < 30; i++) {
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append("{\"campo_").append(i).append("\":1,\"string_list_data\":[{\"value\":\"u").append(i).append("\"}]}");
+        }
+        json.append("]");
+        var c = new ConstrutorDeExportacao().seguindo("ana");
+        c.arquivo("connections/followers_and_following/followers_1.json", json.toString());
+        var d = importar(c).diagnosticos().stream().filter(x -> x.categoria() == CategoriaDeDados.SEGUIDORES).findFirst().orElseThrow();
+        assertThat(d.formas().size()).isLessThanOrEqualTo(13);
+        assertThat(d.formas()).containsKey("(outras formas)");
+        assertThat(d.validos()).isEqualTo(30);
+    }
+
+    @Test
+    void solicitacaoPendenteComoRegistroUnicoNaRaizEhLida() {
+        var c = new ConstrutorDeExportacao().seguidores("ana").seguindo("ana");
+        c.arquivo("connections/followers_and_following/pending_follow_requests.json", """
+                {"timestamp": 1704067200, "media": [], "label_values": [
+                   {"label": "URL", "value": "https://www.instagram.com/carla_x"},
+                   {"label": "Nome", "value": ""},
+                   {"label": "Nome de usuário", "value": ""}]}""");
+        ResultadoDaImportacao r = importar(c);
+        assertThat(nomes(r, TipoDeRelacionamento.SOLICITACAO_PENDENTE)).containsExactly("carla_x");
+        assertThat(r.registrosInvalidos()).isZero();
+    }
+
+    @Test
+    void registroUnicoNaRaizSemUsuarioEhDescartadoSemInventar() {
+        var c = new ConstrutorDeExportacao().seguindo("ana");
+        c.arquivo("connections/followers_and_following/pending_follow_requests.json",
+                "{\"timestamp\": 1, \"label_values\": [{\"label\": \"Nome\", \"value\": \"Maria Silva\"}]}");
+        ResultadoDaImportacao r = importar(c);
+        assertThat(nomes(r, TipoDeRelacionamento.SOLICITACAO_PENDENTE)).isEmpty();
+        assertThat(r.registrosInvalidos()).isEqualTo(1);
+    }
+
+    @Test
+    void diagnosticoInformaOPeriodoDasDatasEOInventarioNaoListaMensagens() {
+        var c = new ConstrutorDeExportacao().seguindo("ana");
+        c.arquivo("conta/connections/followers_and_following/followers_1.json", """
+                [{"title":"","string_list_data":[{"href":"https://www.instagram.com/a1","value":"a1","timestamp":1672531200}]},
+                 {"title":"","string_list_data":[{"href":"https://www.instagram.com/a2","value":"a2","timestamp":1704067200}]}]""");
+        c.arquivo("conta/your_instagram_activity/messages/inbox/fulano_123/message_1.json", "{\"messages\": []}");
+        ResultadoDaImportacao r = importar(c);
+        var d = r.diagnosticos().stream().filter(x -> x.categoria() == CategoriaDeDados.SEGUIDORES).findFirst().orElseThrow();
+        assertThat(d.comoTexto()).contains("datas dos registros: 2023-01-01 a 2024-01-01");
+        String inventario = DiagnosticoDeArquivo.inventarioComoTexto(r.inventario());
+        assertThat(inventario).contains("connections/followers_and_following/followers_1.json").contains("SEGUIDORES: 1 arquivo");
+        assertThat(inventario).doesNotContain("fulano").doesNotContain("message_1");
+    }
+
+    // ---- exportação com intervalo de datas ----
+
+    private static String seguidoresEm(long... instantes) {
+        StringBuilder j = new StringBuilder("[");
+        for (int i = 0; i < instantes.length; i++) {
+            j.append(i > 0 ? "," : "").append("{\"title\":\"\",\"string_list_data\":[{\"href\":\"https://www.instagram.com/u").append(i)
+                    .append("\",\"value\":\"u").append(i).append("\",\"timestamp\":").append(instantes[i]).append("}]}");
+        }
+        return j.append("]").toString();
+    }
+
+    private static String seguindoEm(long... instantes) {
+        StringBuilder j = new StringBuilder("{\"relationships_following\":[");
+        for (int i = 0; i < instantes.length; i++) {
+            j.append(i > 0 ? "," : "").append("{\"title\":\"s").append(i).append("\",\"string_list_data\":[{\"href\":\"https://www.instagram.com/s")
+                    .append(i).append("\",\"timestamp\":").append(instantes[i]).append("}]}");
+        }
+        return j.append("]}").toString();
+    }
+
+    private static final long DIA = 86_400L;
+    private static final long FIM = 1_792_000_000L; // referência arbitrária para a data da exportação
+
+    @Test
+    void seguidoresDeUmSoAnoComSeguidosDeVariosAnosGeramAvisoDeCoberturaParcial() {
+        var c = new ConstrutorDeExportacao();
+        c.arquivo("connections/followers_and_following/followers_1.json", seguidoresEm(FIM - 364 * DIA, FIM - 100 * DIA, FIM));
+        c.arquivo("connections/followers_and_following/following.json", seguindoEm(FIM - 2000 * DIA, FIM - 500 * DIA, FIM));
+        ResultadoDaImportacao r = importar(c);
+        assertThat(r.avisosDeCobertura()).hasSize(1);
+        assertThat(r.avisosDeCobertura().get(0)).contains("lista de seguidores cobre apenas").contains("possivelmente incompleta").contains("intervalo de datas");
+        assertThat(r.categoriasIncompletas()).contains(CategoriaDeDados.SEGUIDORES).doesNotContain(CategoriaDeDados.SEGUINDO);
+        assertThat(r.permiteComparacaoDeSeguidores()).isFalse();
+        assertThat(r.avisos()).anyMatch(a -> a.contains("cobre apenas"));
+    }
+
+    @Test
+    void contaNovaOuListasComMesmoPeriodoNaoGeramAviso() {
+        var nova = new ConstrutorDeExportacao();
+        nova.arquivo("connections/followers_and_following/followers_1.json", seguidoresEm(FIM - 300 * DIA, FIM));
+        nova.arquivo("connections/followers_and_following/following.json", seguindoEm(FIM - 320 * DIA, FIM));
+        assertThat(importar(nova).avisosDeCobertura()).isEmpty();
+        // seguidores que começaram tarde, mas por muito mais de um ano: não é a assinatura de um corte de um ano
+        var antiga = new ConstrutorDeExportacao();
+        antiga.arquivo("connections/followers_and_following/followers_1.json", seguidoresEm(FIM - 1500 * DIA, FIM));
+        antiga.arquivo("connections/followers_and_following/following.json", seguindoEm(FIM - 3000 * DIA, FIM));
+        assertThat(importar(antiga).avisosDeCobertura()).isEmpty();
+    }
+
+    @Test
+    void exportacaoSemDatasNaoGeraAvisoDeCobertura() {
+        ResultadoDaImportacao r = importar(new ConstrutorDeExportacao().seguidores("ana").seguindo("bruno"));
+        assertThat(r.avisosDeCobertura()).isEmpty();
+    }
+
+    // ---- listas recentes ----
+
+    private static String registros(String chave, String... urls) {
+        StringBuilder j = new StringBuilder("{\"" + chave + "\":[");
+        for (int i = 0; i < urls.length; i++) {
+            j.append(i > 0 ? "," : "").append("{\"timestamp\":").append(1_700_000_000L + i).append(",\"media\":[],\"label_values\":[")
+                    .append("{\"label\":\"URL\",\"value\":\"https://www.instagram.com/").append(urls[i]).append("\"},{\"label\":\"Nome\",\"value\":\"\"}],\"fbid\":\"1\"}");
+        }
+        return j.append("]}").toString();
+    }
+
+    @Test
+    void leAsTresListasRecentesComTiposProprios() {
+        var c = new ConstrutorDeExportacao().seguidores("ana").seguindo("ana");
+        c.arquivo("connections/followers_and_following/recently_unfollowed_profiles.json", registros("relationships_unfollowed_users", "bia", "caio"));
+        c.arquivo("connections/followers_and_following/recent_follow_requests.json", registros("relationships_permanent_follow_requests", "dani"));
+        c.arquivo("connections/followers_and_following/follow_requests_you've_received.json", registros("relationships_follow_requests_received", "eva", "fabio"));
+        ResultadoDaImportacao r = importar(c);
+        assertThat(nomes(r, TipoDeRelacionamento.DEIXEI_DE_SEGUIR_RECENTE)).containsExactly("bia", "caio");
+        assertThat(nomes(r, TipoDeRelacionamento.SOLICITACAO_RECENTE)).containsExactly("dani");
+        assertThat(nomes(r, TipoDeRelacionamento.SOLICITACAO_RECEBIDA)).containsExactly("eva", "fabio");
+        assertThat(r.registrosInvalidos()).isZero();
+        // não contaminam as listas de seguidores e seguindo
+        assertThat(nomes(r, TipoDeRelacionamento.SEGUIDOR)).containsExactly("ana");
+        assertThat(r.categoriasProcessadas()).contains(CategoriaDeDados.DEIXEI_DE_SEGUIR, CategoriaDeDados.SOLICITACOES_RECENTES, CategoriaDeDados.SOLICITACOES_RECEBIDAS);
+    }
+
+    @Test
+    void apostrofoTipograficoNoNomeDoArquivoTambemEReconhecido() {
+        assertThat(ClassificadorDeCategoria.classificar("connections/followers_and_following/follow_requests_you\u2019ve_received.json"))
+                .isEqualTo(CategoriaDeDados.SOLICITACOES_RECEBIDAS);
+        assertThat(ClassificadorDeCategoria.classificar("connections/followers_and_following/follow_requests_you've_received.json"))
+                .isEqualTo(CategoriaDeDados.SOLICITACOES_RECEBIDAS);
+        assertThat(ClassificadorDeCategoria.classificar("connections/followers_and_following/recently_unfollowed_profiles.json"))
+                .isEqualTo(CategoriaDeDados.DEIXEI_DE_SEGUIR);
+        assertThat(ClassificadorDeCategoria.classificar("connections/followers_and_following/removed_suggestions.json"))
+                .isEqualTo(CategoriaDeDados.RELACIONAMENTOS_OUTROS);
+    }
+}

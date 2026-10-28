@@ -1,0 +1,6 @@
+# Uma migração por linha, em ordem. Migrações publicadas nunca são editadas: crie uma nova versão.
+V001__esquema_inicial.sql
+V002__anotacoes_e_etiquetas.sql
+V003__tipos_de_relacionamento_recentes.sql
+V004__atividade_e_conteudo.sql
+V005__arquivo_de_mensagens.sql

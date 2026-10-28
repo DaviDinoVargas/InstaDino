@@ -1,0 +1,3 @@
+# Chaves PÚBLICAS de assinatura de licenças confiáveis, uma por linha, no formato kid=arquivo.pem (SPKI, Ed25519).
+# Ainda não existe chave de produção: ela será gerada no ambiente protegido do backend e a parte pública
+# adicionada aqui no processo de release. NUNCA coloque chaves privadas neste diretório.

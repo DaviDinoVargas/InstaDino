@@ -1,0 +1,1092 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:18443",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/v1/webhooks/pagamento": {
+      "post": {
+        "tags": [
+          "controlador-de-pagamentos"
+        ],
+        "operationId": "webhook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessoes": {
+      "get": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "sessoes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessaoAtiva"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "entrar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisicaoDeLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaDeLogin"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/senha/redefinir": {
+      "post": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "redefinir",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisicaoDeRedefinicao"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/senha/recuperacao": {
+      "post": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "recuperar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisicaoDeRecuperacao"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandbox/pedidos/{pedidoId}/eventos/{tipo}": {
+      "post": {
+        "tags": [
+          "controlador-de-pagamentos"
+        ],
+        "operationId": "simular",
+        "parameters": [
+          {
+            "name": "pedidoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/licencas": {
+      "post": {
+        "tags": [
+          "controlador-de-licencas"
+        ],
+        "operationId": "ativarOuRenovar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisicaoDeLicenca"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicencaAssinada"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/contas": {
+      "post": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "cadastrar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisicaoDeCadastro"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/contas/verificar-email": {
+      "post": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "verificarEmail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisicaoDeToken"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/checkout": {
+      "post": {
+        "tags": [
+          "controlador-de-pagamentos"
+        ],
+        "operationId": "criarCheckout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisicaoDeCheckout"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaDeCheckout"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/planos": {
+      "post": {
+        "tags": [
+          "controlador-administrativo"
+        ],
+        "operationId": "plano",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisicaoDePlano"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/admin/contas/{id}/revogar-sessoes": {
+      "post": {
+        "tags": [
+          "controlador-administrativo"
+        ],
+        "operationId": "revogarSessoes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/admin/contas/{id}/revogar-licencas": {
+      "post": {
+        "tags": [
+          "controlador-administrativo"
+        ],
+        "operationId": "revogarLicencas",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/admin/contas/{id}/desativar": {
+      "post": {
+        "tags": [
+          "controlador-administrativo"
+        ],
+        "operationId": "desativar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/admin/concessoes": {
+      "post": {
+        "tags": [
+          "controlador-administrativo"
+        ],
+        "operationId": "conceder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisicaoDeConcessao"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/status": {
+      "get": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "status",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/planos": {
+      "get": {
+        "tags": [
+          "controlador-de-pagamentos"
+        ],
+        "operationId": "planos",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaDeCatalogo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pedidos": {
+      "get": {
+        "tags": [
+          "controlador-de-pagamentos"
+        ],
+        "operationId": "pedidos",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDoHistorico"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dispositivos": {
+      "get": {
+        "tags": [
+          "controlador-de-licencas"
+        ],
+        "operationId": "dispositivos",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispositivoAutorizado"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conta": {
+      "get": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "minhaConta",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumoDaConta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assinatura": {
+      "get": {
+        "tags": [
+          "controlador-de-licencas"
+        ],
+        "operationId": "assinatura",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoDaAssinatura"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/contas": {
+      "get": {
+        "tags": [
+          "controlador-administrativo"
+        ],
+        "operationId": "contas",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContaAdministrativa"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/auditoria": {
+      "get": {
+        "tags": [
+          "controlador-administrativo"
+        ],
+        "operationId": "auditoria",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDeAuditoria"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessoes/{id}": {
+      "delete": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "revogar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/sessoes/atual": {
+      "delete": {
+        "tags": [
+          "controlador-de-contas"
+        ],
+        "operationId": "sair",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/dispositivos/{id}": {
+      "delete": {
+        "tags": [
+          "controlador-de-licencas"
+        ],
+        "operationId": "removerDispositivo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/admin/concessoes/{id}": {
+      "delete": {
+        "tags": [
+          "controlador-administrativo"
+        ],
+        "operationId": "revogarConcessao",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RequisicaoDeLogin": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "senha": {
+            "type": "string"
+          },
+          "idDoDispositivo": {
+            "type": "string"
+          },
+          "nomeDoDispositivo": {
+            "type": "string"
+          }
+        }
+      },
+      "RespostaDeLogin": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "conta": {
+            "$ref": "#/components/schemas/ResumoDaConta"
+          }
+        }
+      },
+      "ResumoDaConta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "papel": {
+            "type": "string",
+            "enum": [
+              "CLIENTE",
+              "MASTER"
+            ]
+          },
+          "emailVerificado": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RequisicaoDeRedefinicao": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "novaSenha": {
+            "type": "string"
+          }
+        }
+      },
+      "RequisicaoDeRecuperacao": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "RequisicaoDeLicenca": {
+        "type": "object",
+        "properties": {
+          "idDoDispositivo": {
+            "type": "string"
+          },
+          "nomeDoDispositivo": {
+            "type": "string"
+          }
+        }
+      },
+      "LicencaAssinada": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "string"
+          },
+          "assinatura": {
+            "type": "string"
+          },
+          "kid": {
+            "type": "string"
+          },
+          "algoritmo": {
+            "type": "string"
+          }
+        }
+      },
+      "RequisicaoDeCadastro": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "senha": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          }
+        }
+      },
+      "RequisicaoDeToken": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "RequisicaoDeCheckout": {
+        "type": "object",
+        "properties": {
+          "planoId": {
+            "type": "string"
+          }
+        }
+      },
+      "RespostaDeCheckout": {
+        "type": "object",
+        "properties": {
+          "pedidoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "urlDoCheckout": {
+            "type": "string"
+          },
+          "sandbox": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RequisicaoDePlano": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "periodicidade": {
+            "type": "string"
+          },
+          "precoEmCentavos": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RequisicaoDeConcessao": {
+        "type": "object",
+        "properties": {
+          "contaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dias": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "motivo": {
+            "type": "string"
+          }
+        }
+      },
+      "SessaoAtiva": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nomeDoDispositivo": {
+            "type": "string"
+          },
+          "criadaEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ultimoUso": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atual": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PlanoComercial": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "periodicidade": {
+            "type": "string"
+          },
+          "precoEmCentavos": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "moeda": {
+            "type": "string"
+          }
+        }
+      },
+      "RespostaDeCatalogo": {
+        "type": "object",
+        "properties": {
+          "planos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanoComercial"
+            }
+          },
+          "situacao": {
+            "type": "string",
+            "enum": [
+              "DESABILITADO",
+              "SANDBOX_ATIVO",
+              "PRODUCAO_ATIVA",
+              "PRODUCAO_INCOMPLETA"
+            ]
+          },
+          "comprasHabilitadas": {
+            "type": "boolean"
+          },
+          "mensagem": {
+            "type": "string"
+          }
+        }
+      },
+      "ItemDoHistorico": {
+        "type": "object",
+        "properties": {
+          "pedidoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planoId": {
+            "type": "string"
+          },
+          "valorEmCentavos": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "moeda": {
+            "type": "string"
+          },
+          "situacao": {
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DispositivoAutorizado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "ativadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EstadoDaAssinatura": {
+        "type": "object",
+        "properties": {
+          "situacao": {
+            "type": "string"
+          },
+          "planoId": {
+            "type": "string"
+          },
+          "validaAte": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "premiumVigente": {
+            "type": "boolean"
+          },
+          "origem": {
+            "type": "string"
+          }
+        }
+      },
+      "ContaAdministrativa": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "papel": {
+            "type": "string",
+            "enum": [
+              "CLIENTE",
+              "MASTER"
+            ]
+          },
+          "ativa": {
+            "type": "boolean"
+          },
+          "emailVerificado": {
+            "type": "boolean"
+          },
+          "premium": {
+            "type": "boolean"
+          },
+          "origemDoDireito": {
+            "type": "string"
+          }
+        }
+      },
+      "ItemDeAuditoria": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ocorridoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "atorTipo": {
+            "type": "string"
+          },
+          "acao": {
+            "type": "string"
+          },
+          "alvo": {
+            "type": "string"
+          },
+          "detalhe": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

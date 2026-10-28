@@ -1,0 +1,40 @@
+/* Tema claro: apenas redefine as cores; a estrutura vem de instadino.css. */
+.root {
+    -cor-fundo: #f4f4fa;
+    -cor-superficie: #ffffff;
+    -cor-superficie-2: #f0f0f8;
+    -cor-borda: #d9d9e8;
+    -cor-texto: #1a1a28;
+    -cor-suave: #5d5e78;
+    -cor-acento: #6d3fe0;
+    -cor-acento-2: #b32fc9;
+    -cor-azul: #2563eb;
+    -cor-sucesso: #0f9d6b;
+    -cor-aviso: #b7791f;
+    -cor-erro: #d03a3a;
+    -cor-foco: #6d3fe0;
+    -fx-base: #ffffff;
+    -fx-background: #f4f4fa;
+    -fx-control-inner-background: #ffffff;
+    -fx-control-inner-background-alt: #f7f7fc;
+    -fx-accent: #6d3fe0;
+    -fx-text-base-color: #1a1a28;
+    -fx-text-background-color: #1a1a28;
+    -fx-text-inner-color: #1a1a28;
+    -fx-prompt-text-fill: #84859c;
+    -fx-background-color: #f4f4fa;
+}
+.barra-lateral, .barra-superior { -fx-background-color: #ffffff; }
+.botao-nav:hover { -fx-background-color: #ececf8; }
+.botao-nav:selected { -fx-text-fill: #3b1a99; }
+.botao-nav:selected .icone, .botao-nav:hover .icone { -fx-background-color: #3b1a99; }
+.table-view .column-header-background { -fx-background-color: #f0f0f8; }
+.table-row-cell:odd { -fx-background-color: rgba(0,0,0,0.025); }
+.table-row-cell:selected .table-cell { -fx-text-fill: #1a1a28; }
+.notificacao { -fx-background-color: #ffffff; }
+.selo-free { -fx-background-color: #e6e6f4; }
+.tooltip { -fx-background-color: #1a1a28; -fx-text-fill: white; }
+.chart-plot-background { -fx-background-color: transparent; }
+.chart-vertical-grid-lines, .chart-horizontal-grid-lines { -fx-stroke: rgba(0,0,0,0.08); }
+.tab-pane .tab:selected { -fx-background-color: rgba(109,63,224,0.14); }
+.tab-pane .tab:selected .tab-label { -fx-text-fill: #3b1a99; }
