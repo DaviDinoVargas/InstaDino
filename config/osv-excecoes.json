@@ -1,0 +1,17 @@
+{
+  "comentario": "Avisos da auditoria OSV aceitos temporariamente. Cada exceção exige motivo e data de revisão; vencida, volta a falhar o job.",
+  "excecoes": [
+    {
+      "id": "GHSA-j9f9-w8pj-32f8",
+      "pacote": "org.springframework:spring-webmvc",
+      "motivo": "CVE-2026-47890: corrupção de fluxo SSE ao renderizar fragmentos de visão. O backend só tem @RestController, sem visões, sem SSE e sem fragmentos (verificado por busca no código). Não há versão 6.2.x corrigida; a correção está só no Spring Framework 7.0.9.",
+      "revisar_ate": "2026-12-15"
+    },
+    {
+      "id": "GHSA-pc63-qcmh-9cmg",
+      "pacote": "org.springframework:spring-webmvc",
+      "motivo": "CVE-2026-47884: travessia de caminho em XsltView. Exige mapeamento /** que renderize visão sem nome explícito; o backend não usa visões. Não há versão 6.2.x corrigida; a correção está só no Spring Framework 7.0.9.",
+      "revisar_ate": "2026-12-15"
+    }
+  ]
+}

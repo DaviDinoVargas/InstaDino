@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Exclusões do SpotBugs. Cada uma tem justificativa; nada é excluído em silêncio.
+  Qualquer novo achado de qualquer outro padrão derruba o build (`mvn verify`).
+-->
+<FindBugsFilter>
+  <!-- EI_EXPOSE_REP/REP2: registros e objetos de composição guardam listas, mapas e referências de UI. Todo o código
+       roda no mesmo processo e sem chamador não confiável; não há fronteira de confiança aqui. Os dados que cruzam
+       fronteira (importador, API, banco) são validados e copiados nos construtores compactos dos registros. -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+
+  <!-- NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE: Path#getParent() só é nulo para a raiz do sistema de arquivos. Em todos os
+       pontos o caminho já foi tornado absoluto (toAbsolutePath()) e é um arquivo de dados, nunca a raiz. -->
+  <Match>
+    <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    <Or>
+      <Class name="br.com.instadino.persistencia.BackupComSenha"/>
+      <Class name="br.com.instadino.persistencia.BackupLocal"/>
+      <Class name="br.com.instadino.persistencia.BancoLocal"/>
+      <Class name="br.com.instadino.persistencia.seguranca.ArmazemDeChave"/>
+      <Class name="br.com.instadino.licenciamento.ArmazemDeConta"/>
+      <Class name="br.com.instadino.licenciamento.IdDoDispositivo"/>
+      <Class name="br.com.instadino.licenciamento.ChavesConfiaveis"/>
+    </Or>
+  </Match>
+
+  <!-- SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE: PRAGMA hexrekey não aceita parâmetros. O texto só contém a chave em
+       hexadecimal gerado a partir de bytes (nunca entrada de texto) e é validado por expressão regular antes do uso;
+       a exceção é a única da varredura estática de SQL (ConsultasParametrizadasTest). -->
+  <Match>
+    <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"/>
+    <Class name="br.com.instadino.persistencia.BancoLocal"/>
+    <Method name="trocarChave"/>
+  </Match>
+
+  <!-- CT_CONSTRUCTOR_THROW: o construtor falha de propósito quando a chave de assinatura não está configurada
+       (falha fechada). A classe é final e o objeto parcial nunca é exposto. -->
+  <Match>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    <Class name="br.com.instadino.servidor.servico.AssinadorDeLicencas"/>
+  </Match>
+
+  <!-- DMI_RANDOM_USED_ONLY_ONCE: o objeto é java.security.SecureRandom, usado uma vez para gerar o segredo aleatório do
+       webhook de sandbox; o alerta é pensado para java.util.Random. -->
+  <Match>
+    <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/>
+    <Class name="br.com.instadino.servidor.config.ConfiguracaoDePagamentoDoServidor"/>
+  </Match>
+</FindBugsFilter>

@@ -92,8 +92,8 @@ class InterfaceTest {
     void primeiraExecucaoMostraBoasVindasComOPlanoFree() {
         abrir();
         assertThat(janela.contexto().roteador().atual()).isEqualTo(Destino.BOAS_VINDAS);
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Bem-vindo ao InstaDino"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "FREE"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Bem-vindo ao InstaDino"), "texto Bem-vindo ao InstaDino");
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "FREE"), "texto FREE");
         assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Continuar com o plano Free"))).isNotNull();
         FxTeste.capturar(raiz(), "01-boas-vindas");
     }
@@ -107,7 +107,7 @@ class InterfaceTest {
             assertThat(FxTeste.naInterface(() -> FxTeste.textos(raiz()))).as(d.name()).isNotEmpty();
         }
         ir(Destino.PAINEL);
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Nenhuma exportação importada ainda"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Nenhuma exportação importada ainda"), "texto Nenhuma exportação importada ainda");
     }
 
     @Test
@@ -120,16 +120,16 @@ class InterfaceTest {
 
         FxTeste.naInterface(() -> tela.inspecionar(zip));
         FxTeste.esperar(() -> FxTeste.botao(raiz(), "Processar") != null, "inventário");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Inventário do arquivo"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Seguidores"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Inventário do arquivo"), "título do inventário"); // as células da tabela são criadas no próximo layout
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Seguidores"), "linha de seguidores na tabela do inventário"); // as células da tabela são criadas no próximo layout
         FxTeste.capturar(raiz(), "03-importacao-inventario");
         assertThat(local.historico().listar()).as("nada gravado antes da confirmação").isEmpty();
 
         FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Processar").fire());
         FxTeste.esperar(() -> FxTeste.botao(raiz(), "Confirmar e salvar") != null, "resumo");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Nada foi gravado ainda"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Diagnóstico por arquivo"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "followers_1.json"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Nada foi gravado ainda"), "aviso de que nada foi gravado"); // as células da tabela são criadas no próximo layout
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Diagnóstico por arquivo"), "cartão de diagnóstico"); // as células da tabela são criadas no próximo layout
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "followers_1.json"), "linha do diagnóstico"); // as células da tabela são criadas no próximo layout
         assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Copiar diagnóstico"))).isNotNull();
         FxTeste.capturar(raiz(), "04-importacao-resumo");
         assertThat(local.historico().listar()).isEmpty();
@@ -137,7 +137,7 @@ class InterfaceTest {
         FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Confirmar e salvar").fire());
         FxTeste.esperar(() -> janela.contexto().roteador().atual() == Destino.PAINEL, "painel após confirmar");
         assertThat(local.historico().listar()).hasSize(1);
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Relações mútuas"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Relações mútuas"), "texto Relações mútuas");
         FxTeste.capturar(raiz(), "05-painel");
     }
 
@@ -156,7 +156,7 @@ class InterfaceTest {
         ImportacaoTela tela = (ImportacaoTela) janela.contexto().roteador().tela(Destino.IMPORTACAO);
         FxTeste.naInterface(() -> tela.inspecionar(ruim));
         FxTeste.esperar(() -> FxTeste.botao(raiz(), "Escolher outro arquivo") != null, "mensagem de erro");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "caminhos inseguros"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "caminhos inseguros"), "texto caminhos inseguros");
         assertThat(FxTeste.naInterface(() -> String.join("|", FxTeste.textos(raiz())))).doesNotContain("Exception", "etc/instadino", pasta.toString());
         FxTeste.capturar(raiz(), "06-importacao-erro");
     }
@@ -227,20 +227,20 @@ class InterfaceTest {
         ir(Destino.RELACIONAMENTOS);
         FxTeste.esperar(() -> FxTeste.botao(raiz(), "Aplicar filtros") != null, "botão de aplicar filtros (Premium)");
         assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Aplicar filtros").getParent().isDisabled())).isFalse();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "PREMIUM"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "PREMIUM"), "texto PREMIUM");
         FxTeste.capturar(raiz(), "09-relacionamentos-premium");
     }
 
     @Test
     void mudancaDePlanoAtualizaOSeloSemReiniciar() {
         abrir();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "FREE"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "FREE"), "texto FREE");
         licenca.set(new EstadoDaLicenca(Plano.PREMIUM, SituacaoDaLicenca.ATIVA));
         FxTeste.naInterface(() -> janela.contexto().estadoMudou());
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "PREMIUM"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "PREMIUM"), "texto PREMIUM");
         licenca.set(new EstadoDaLicenca(Plano.PREMIUM, SituacaoDaLicenca.EXPIRADA));
         FxTeste.naInterface(() -> janela.contexto().estadoMudou());
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "FREE"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "FREE"), "texto FREE");
     }
 
     @Test
@@ -261,8 +261,8 @@ class InterfaceTest {
     void premiumInformaQueACompraAindaNaoEstaHabilitada() {
         abrir();
         ir(Destino.PREMIUM);
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "A compra do plano Premium ainda não está habilitada"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Em desenvolvimento"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "A compra do plano Premium ainda não está habilitada"), "texto A compra do plano Premium ainda não está habilitada");
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Em desenvolvimento"), "texto Em desenvolvimento");
         FxTeste.capturar(raiz(), "11-premium");
     }
 
@@ -270,8 +270,8 @@ class InterfaceTest {
     void segurancaMostraCifragemAtivaEAvisaModoDeDesenvolvimento() {
         abrir();
         ir(Destino.SEGURANCA);
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Ativa"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "modo de desenvolvimento"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Ativa"), "texto Ativa");
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "modo de desenvolvimento"), "texto modo de desenvolvimento");
         FxTeste.capturar(raiz(), "12-seguranca");
     }
 
@@ -282,8 +282,8 @@ class InterfaceTest {
         FxTeste.esperar(() -> FxTeste.botao(raiz(), "Criar backup…") != null, "cartão de backup");
         assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Criar backup…").isDisabled())).isTrue();
         assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Restaurar backup…").isDisabled())).isFalse();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Backup protegido por senha (Premium)"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Restaurar um backup seu é sempre gratuito"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Backup protegido por senha (Premium)"), "texto Backup protegido por senha (Premium)");
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Restaurar um backup seu é sempre gratuito"), "texto Restaurar um backup seu é sempre gratuito");
     }
 
     @Test
@@ -293,7 +293,7 @@ class InterfaceTest {
         ir(Destino.SEGURANCA);
         FxTeste.esperar(() -> FxTeste.botao(raiz(), "Criar backup…") != null, "cartão de backup");
         assertThat(FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Criar backup…").isDisabled())).isFalse();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Guarde a senha em um lugar seguro"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Guarde a senha em um lugar seguro"), "texto Guarde a senha em um lugar seguro");
         FxTeste.naInterface(() -> FxTeste.todos(raiz()).stream().filter(n -> n instanceof javafx.scene.control.ScrollPane)
                 .forEach(n -> ((javafx.scene.control.ScrollPane) n).setVvalue(1.0)));
         FxTeste.capturar(raiz(), "12b-backup-premium");
@@ -321,8 +321,8 @@ class InterfaceTest {
         importarPeloServico(c);
         FxTeste.naInterface(() -> br.com.instadino.desktop.telas.Telas.abrirRelacionamentos(janela.contexto(), VisaoDeRelacionamento.SEGUIDORES, ""));
         FxTeste.esperar(() -> tabela().getItems().size() == 100, "primeira página");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Página 1 de 500"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "50.000 contas"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Página 1 de 500"), "texto Página 1 de 500");
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "50.000 contas"), "texto 50.000 contas");
         Button proxima = FxTeste.naInterface(() -> FxTeste.botao(raiz(), "Próxima ›"));
         FxTeste.naInterface(proxima::fire);
         FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Página 2 de 500"), "segunda página");
@@ -334,8 +334,8 @@ class InterfaceTest {
         importarPeloServico(ConstrutorDeExportacao.exemplo());
         importarPeloServico(ConstrutorDeExportacao.exemplo());
         ir(Destino.HISTORICO);
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "apenas a importação mais recente"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Comparar períodos (Premium)"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "apenas a importação mais recente"), "texto apenas a importação mais recente");
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Comparar períodos (Premium)"), "texto Comparar períodos (Premium)");
         FxTeste.capturar(raiz(), "14-historico-free");
     }
 

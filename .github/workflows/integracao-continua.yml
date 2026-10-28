@@ -36,6 +36,15 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgtk-3-0 libxtst6
       - name: Build e testes (inclui interface sob Xvfb)
         run: xvfb-run -a mvn -B -ntp verify
+      - name: Gerar SBOM (CycloneDX)
+        run: scripts/gerar-sbom.sh
+      - name: Publicar SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: |
+            target/bom.json
+            target/bom.xml
       - name: Publicar relatórios de teste
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,4 +58,35 @@ jobs:
         with:
           name: capturas-da-interface
           path: desktop-app/target/capturas/*.png
+          if-no-files-found: ignore
+
+  auditoria-de-dependencias:
+    name: Auditoria de vulnerabilidades das dependências (OSV)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Gerar SBOM
+        run: scripts/gerar-sbom.sh
+      - name: Baixar o osv-scanner com verificação de checksum
+        run: |
+          base=https://github.com/google/osv-scanner/releases/download/v1.9.2
+          curl -sSfL -o osv-scanner "$base/osv-scanner_linux_amd64"
+          curl -sSfL -o osv-sums.txt "$base/osv-scanner_SHA256SUMS"
+          grep ' osv-scanner_linux_amd64$' osv-sums.txt | sed 's/osv-scanner_linux_amd64/osv-scanner/' | sha256sum -c -
+          chmod +x osv-scanner
+      - name: Consultar o banco de vulnerabilidades (OSV)
+        run: ./osv-scanner --format json --output osv.json --sbom target/bom.json || test $? -eq 1
+      - name: Resumir e falhar se houver vulnerabilidade conhecida
+        run: python3 scripts/resumir-osv.py osv.json config/osv-excecoes.json
+      - name: Publicar resultado bruto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auditoria-osv
+          path: osv.json
           if-no-files-found: ignore

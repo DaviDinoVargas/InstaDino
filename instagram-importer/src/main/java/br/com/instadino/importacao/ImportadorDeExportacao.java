@@ -186,7 +186,8 @@ public final class ImportadorDeExportacao {
                         if (destino.containsKey(u.getKey())) {
                             duplicados++;
                         }
-                        destino.merge(u.getKey(), u.getValue() == null ? Long.MAX_VALUE : u.getValue(), Math::min);
+                        long instante = u.getValue() == null ? Long.MAX_VALUE : u.getValue().longValue();
+                        destino.merge(u.getKey(), instante, Math::min);
                     }
                     for (Map.Entry<String, Integer> m : leitura.invalidosPorMotivo().entrySet()) {
                         invalidosPorMotivo.merge(m.getKey(), m.getValue(), Integer::sum);

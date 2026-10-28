@@ -4,17 +4,17 @@
 
 ## Portões obrigatórios (todos)
 
-| # | Portão | Situação em 2026-10-26 |
+| # | Portão | Situação em 2026-10-28 |
 |---|---|---|
-| 1 | Suíte completa verde no Linux e no Windows (CI) | atendido no commit atual |
-| 2 | Avaliação de Segurança 3 sem achados críticos/altos abertos (`security/FINAL_SECURITY_AUDIT.md`) | pendente |
-| 3 | Auditoria de vulnerabilidades das dependências executada e tratada (R14/V-11) | **pendente — bloqueia o release** |
+| 1 | Suíte completa verde no Linux e no Windows (CI) | atendido no commit atual; análise estática (SpotBugs) incluída |
+| 2 | Avaliação de Segurança 3 sem achados críticos/altos abertos (`security/FINAL_SECURITY_AUDIT.md`) | **atendido** (2026-10-28) |
+| 3 | Auditoria de vulnerabilidades das dependências executada e tratada (R14/V-11) | **atendido** na CI (OSV), com 2 exceções datadas até 2026-12-15; reexecutar no commit de release |
 | 4 | Verificação de segredos no índice e no histórico limpa | atendido no commit atual |
 | 5 | Chave de produção de licenças gerada em ambiente controlado e a pública embutida (`docs/LICENSING.md`) | **pendente** |
 | 6 | Instalador **assinado** e assinatura verificada com `signtool verify /pa` | **pendente** (sem certificado) |
 | 7 | Teste manual em Windows 10 e 11 limpos: instalar, importar, atualizar, desinstalar | **pendente** |
 | 8 | Revisão jurídica de licenças (`THIRD_PARTY.md`), termos e política de privacidade | pendente |
-| 9 | SBOM (CycloneDX) gerado e anexado | pendente |
+| 9 | SBOM (CycloneDX) gerado e anexado | gerado pela CI; anexar à release |
 | 10 | Notas de versão e `SHA256SUMS.txt` publicados com o instalador | pendente |
 
 ## Pagamentos reais
