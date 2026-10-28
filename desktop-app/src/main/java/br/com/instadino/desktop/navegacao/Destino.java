@@ -10,6 +10,7 @@ public enum Destino {
     BIBLIOTECA("Biblioteca de conteúdo"),
     ATIVIDADE("Atividade"),
     MENSAGENS("Mensagens"),
+    EXPLORADOR("Explorador de dados"),
     RELATORIOS("Relatórios"),
     CONTA("Conta"),
     PREMIUM("Premium"),
