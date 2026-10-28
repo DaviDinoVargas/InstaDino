@@ -81,8 +81,8 @@ class ExploradorEPainelInterfaceTest {
         abrir();
         ir(Destino.EXPLORADOR);
         FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Sensível: não lida"), "situação do perfil");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Seguidores"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Perfil e configurações"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Seguidores"), "texto Seguidores");
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Perfil e configurações"), "texto Perfil e configurações");
         FxTeste.capturar(raiz(), "21-explorador");
     }
 
@@ -105,7 +105,7 @@ class ExploradorEPainelInterfaceTest {
         ir(Destino.PAINEL);
         FxTeste.esperar(() -> !FxTeste.temTexto(raiz(), "Composição dos relacionamentos"), "bloco oculto");
         assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Última importação"))).isFalse();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Relações mútuas"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Relações mútuas"), "texto Relações mútuas");
         FxTeste.capturar(raiz(), "22-painel-personalizado");
         licenca.set(EstadoDaLicenca.GRATUITO);
         ir(Destino.CONFIGURACOES);

@@ -122,14 +122,14 @@ class AtividadeEBibliotecaInterfaceTest {
         assertThat(FxTeste.naInterface(() -> abas.getTabs().stream().map(t -> t.getText()).toList()))
                 .containsExactly("Resumo", "Calendário", "Ranking", "Pesquisar", "Cruzamentos");
         assertThat(FxTeste.naInterface(() -> FxTeste.todos(raiz()).stream().anyMatch(n -> n instanceof BarChart && FxTeste.visivelDeFato(n)))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Curtidas"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Curtidas"), "texto Curtidas");
         FxTeste.capturar(raiz(), "16-atividade-resumo");
         FxTeste.naInterface(() -> abas.getSelectionModel().select(1));
         FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Horários e dias da semana"), "calendário");
         FxTeste.capturar(raiz(), "17-atividade-calendario");
         FxTeste.naInterface(() -> abas.getSelectionModel().select(4));
         FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Perfis que você pesquisou"), "cruzamentos");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Não indica interesse nem intenção"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Não indica interesse nem intenção"), "texto Não indica interesse nem intenção");
         FxTeste.capturar(raiz(), "18-atividade-cruzamentos");
     }
 
@@ -153,8 +153,8 @@ class AtividadeEBibliotecaInterfaceTest {
         ir(Destino.BIBLIOTECA);
         FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Catálogo"), "catálogo");
         FxTeste.esperar(() -> FxTeste.todos(raiz()).stream().anyMatch(n -> n instanceof TableView<?> t && FxTeste.visivelDeFato(t) && t.getItems().size() == 2), "2 publicações");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "não são copiados"))).isTrue();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Publicações"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "não são copiados"), "texto não são copiados");
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Publicações"), "texto Publicações");
         FxTeste.capturar(raiz(), "19-biblioteca");
     }
 }

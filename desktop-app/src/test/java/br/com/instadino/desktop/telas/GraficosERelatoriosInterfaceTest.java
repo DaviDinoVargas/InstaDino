@@ -138,7 +138,7 @@ class GraficosERelatoriosInterfaceTest {
         var dados = FxTeste.naInterface(() -> grafico().getData().stream().map(s -> s.getName() + ":" + s.getData().stream()
                 .map(p -> String.valueOf(p.getYValue())).toList()).toList());
         assertThat(dados).containsExactly("Seguidores:[2, 3, 5]", "Seguindo:[2, 2, 3]", "Mútuos:[2, 2, 3]");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "não mostra o que aconteceu entre elas"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "não mostra o que aconteceu entre elas"), "texto não mostra o que aconteceu entre elas");
         FxTeste.naInterface(() -> FxTeste.todos(raiz()).stream().filter(n -> n instanceof javafx.scene.control.ScrollPane)
                 .forEach(n -> ((javafx.scene.control.ScrollPane) n).setVvalue(0.55)));
         FxTeste.capturar(raiz(), "14-historico-grafico");
@@ -170,7 +170,7 @@ class GraficosERelatoriosInterfaceTest {
             assertThat(caixa("Favoritas, etiquetas e notas privadas").isSelected()).isFalse();
             assertThat(caixa("Evolução entre importações").isSelected()).isFalse();
         });
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "ficam desmarcadas por padrão"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "ficam desmarcadas por padrão"), "texto ficam desmarcadas por padrão");
         FxTeste.naInterface(() -> FxTeste.todos(raiz()).stream().filter(n -> n instanceof javafx.scene.control.ScrollPane)
                 .forEach(n -> ((javafx.scene.control.ScrollPane) n).setVvalue(0.4)));
         FxTeste.capturar(raiz(), "15-relatorios-pdf");

@@ -104,7 +104,7 @@ class MensagensInterfaceTest {
     void mensagensComecamDesligadasEPedemConsentimentoAntesDeQualquerLeitura() {
         abrir();
         ImportacaoTela tela = inspecionar();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Mensagens (opcional)"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Mensagens (opcional)"), "texto Mensagens (opcional)");
         CheckBox opcao = opcaoDeMensagens();
         assertThat(opcao).isNotNull();
         assertThat(FxTeste.naInterface(opcao::isSelected)).isFalse();
@@ -126,7 +126,7 @@ class MensagensInterfaceTest {
 
         ir(Destino.MENSAGENS);
         FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Conversas mais movimentadas"), "tela de mensagens");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "Ana Souza"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Ana Souza"), "texto Ana Souza");
         assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "texto-que-nunca-deve-aparecer"))).isFalse();
         assertThat(FxTeste.naInterface(() -> FxTeste.todos(raiz()).stream().anyMatch(n -> n instanceof BarChart && FxTeste.visivelDeFato(n)))).isTrue();
         FxTeste.capturar(raiz(), "20-mensagens-estatisticas");
@@ -150,7 +150,7 @@ class MensagensInterfaceTest {
         licenca.set(EstadoDaLicenca.GRATUITO);
         abrir();
         inspecionar();
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "fazem parte do plano Premium"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "fazem parte do plano Premium"), "texto fazem parte do plano Premium");
         assertThat(opcaoDeMensagens()).isNull();
         ir(Destino.MENSAGENS);
         FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "Estatísticas de mensagens (Premium)"), "cartão Premium");

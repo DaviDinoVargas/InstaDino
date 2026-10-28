@@ -168,7 +168,7 @@ class ContaInterfaceTest {
         FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "incorretos"), "mensagem de erro");
         assertThat(FxTeste.naInterface(() -> s.getText())).as("a senha digitada é apagada do campo").isEmpty();
         assertThat(licenca.estadoAtual().planoEfetivo().name()).isEqualTo("FREE");
-        assertThat(FxTeste.naInterface(() -> FxTeste.temTexto(raiz(), "FREE"))).isTrue();
+        FxTeste.esperar(() -> FxTeste.temTexto(raiz(), "FREE"), "texto FREE");
         FxTeste.capturar(raiz(), "23-conta-erro-de-login");
     }
 
