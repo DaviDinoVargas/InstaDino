@@ -47,6 +47,8 @@ public final class ContextoLocal implements AutoCloseable {
     private final ServicoDeAtividade servicoDeAtividade;
     private final ServicoDeConteudo servicoDeConteudo;
     private final ServicoDeMensagens servicoDeMensagens;
+    private final ServicoDeExplorador explorador;
+    private final ServicoDePaineis paineis;
     private final RepositorioDeConsentimentos consentimentos;
     private final RepositorioDePreferencias preferencias;
     private final RepositorioDePerfis perfis;
@@ -82,6 +84,8 @@ public final class ContextoLocal implements AutoCloseable {
         this.servicoDePerfis = new ServicoDePerfis(politica, perfis, sessao, auditoria, aoAlterar);
         this.importacao = new ServicoDeImportacao(limites, politica, repoImportacoes, perfis, auditoria, aoAlterar);
         this.historico = new ServicoDeHistorico(politica, repoImportacoes, sessao, auditoria, aoAlterar);
+        this.explorador = new ServicoDeExplorador(politica, repoImportacoes, historico, sessao);
+        this.paineis = new ServicoDePaineis(politica, preferencias);
         this.exportacao = new ServicoDeExportacao(politica, relacionamentos, auditoria);
         this.relatorios = new ServicoDeRelatorios(politica, relacionamentos, historico, anotacoes, servicoDePerfis, auditoria,
                 servicoDeAtividade, servicoDeConteudo);
@@ -194,6 +198,14 @@ public final class ContextoLocal implements AutoCloseable {
 
     public ServicoDeConteudo conteudo() {
         return servicoDeConteudo;
+    }
+
+    public ServicoDeExplorador explorador() {
+        return explorador;
+    }
+
+    public ServicoDePaineis paineis() {
+        return paineis;
     }
 
     public ServicoDeMensagens mensagens() {
