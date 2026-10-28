@@ -1,16 +1,19 @@
 ﻿# Sobe o backend de SANDBOX local e o aplicativo desktop no Windows (PowerShell).
-# Uso: .\scripts\executar-sandbox.ps1 [-SomenteBackend]
+# Uso: .\scripts\executar-sandbox.ps1 [-SomenteBackend] [-RedefinirSenhas]
 # Requisitos: JDK 21 e Maven 3.9+ no PATH.
 #
 # Segurança: o backend escuta só em 127.0.0.1; nenhuma senha é escrita no log. As credenciais das contas de
 # demonstração ficam em dados-backend\contas-semeadas.txt (ignorado pelo Git).
 # Para usar senhas suas, defina antes $env:INSTADINO_SENHA_MASTER, $env:INSTADINO_SENHA_PREMIUM e $env:INSTADINO_SENHA_FREE.
-param([switch]$SomenteBackend)
+# -RedefinirSenhas troca as senhas das três contas por senhas NOVAS e aleatórias (use se alguma senha foi divulgada;
+# remova antes qualquer $env:INSTADINO_SENHA_*) e as grava só em dados-backend\contas-semeadas.txt. Nunca cole esse arquivo em chat, issue ou commit.
+param([switch]$SomenteBackend, [switch]$RedefinirSenhas)
 $ErrorActionPreference = 'Stop'
 $raiz = Split-Path -Parent $PSScriptRoot
 Set-Location $raiz
 
 if (-not $env:INSTADINO_DADOS_BACKEND) { $env:INSTADINO_DADOS_BACKEND = Join-Path $raiz 'dados-backend' }
+if ($RedefinirSenhas) { $env:INSTADINO_SEMEADURA_REDEFINIR = 'true' }
 $porta = if ($env:INSTADINO_PORTA) { $env:INSTADINO_PORTA } else { '8443' }
 
 Write-Host '==> Compilando (sem testes)...'
