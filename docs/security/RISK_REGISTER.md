@@ -17,11 +17,11 @@ Linha de base da Avaliação 1; situação atualizada na **Avaliação 2** (`SEC
 | R07 | Escalonamento para papel MASTER | 5 | 2 | 10 | Alto | AUZ-02 | Mitigado |
 | R08 | Força bruta / credential stuffing no login | 4 | 4 | 16 | Crítico | AUT-01, AUT-03 | Mitigado (residual: limitador em memória) |
 | R09 | Enumeração de contas | 3 | 4 | 12 | Alto | AUT-04 | Mitigado (residual: tempo de resposta não medido) |
-| R10 | Banco SQLite lido por terceiros sem cifragem | 5 | 3 | 15 | Crítico | DB-01, DB-02, DB-03 | Mitigado (DPAPI sem verificação em Windows real) |
+| R10 | Banco SQLite lido por terceiros sem cifragem | 5 | 3 | 15 | Crítico | DB-01, DB-02, DB-03 | Mitigado (DPAPI verificada em Windows na CI; sem teste em máquina limpa de usuário) |
 | R11 | Chave do banco fixa ou vazada | 5 | 2 | 10 | Alto | DB-02 | Mitigado |
 | R12 | SQL injection | 5 | 2 | 10 | Alto | DB-04 | Mitigado |
 | R13 | Segredo, senha ou ZIP real publicado no GitHub (repositório público) | 5 | 3 | 15 | Crítico | SUP-01, AUT-09 | Mitigado |
-| R14 | Dependência vulnerável ou comprometida | 4 | 3 | 12 | Alto | SUP-02, SUP-03 | **Aberto** (auditoria de CVE não executada) |
+| R14 | Dependência vulnerável ou comprometida | 4 | 3 | 12 | Alto | SUP-02, SUP-03 | Mitigado (auditoria OSV e SBOM na CI; 2 exceções datadas em `config/osv-excecoes.json`; residual: vulnerabilidades novas após a data da auditoria) |
 | R15 | Chave privada de licenças vazada | 5 | 2 | 10 | Alto | LIC-02, rotação por `kid` | Mitigado (sem chave de produção ainda) |
 | R16 | Dados pessoais da exportação enviados ao backend por engano | 5 | 2 | 10 | Alto | PRI-01 | Mitigado |
 | R17 | Fórmula maliciosa em CSV executada em planilha (CSV injection) | 3 | 3 | 9 | Médio | PRI-04 | Mitigado |
@@ -36,6 +36,9 @@ Linha de base da Avaliação 1; situação atualizada na **Avaliação 2** (`SEC
 | R26 | Interpretação errada dos dados leva a acusação indevida (ex.: "deixou de seguir") | 3 | 4 | 12 | Alto | Avisos de limitação na UI e relatórios | Mitigado |
 | R27 | Operador com acesso excessivo ao banco comercial | 4 | 2 | 8 | Médio | Privilégios mínimos, auditoria | **Aberto** (privilégios de produção não definidos) |
 | R28 | Dependência de infraestrutura indisponível bloqueia acesso aos dados locais | 3 | 3 | 9 | Médio | LIC-05 | Mitigado |
+| R29 | Texto de mensagens ou dados de terceiros das conversas gravados ou expostos | 5 | 2 | 10 | Alto | PRI-02: Premium + consentimento, só agregados | Mitigado (teste varre todas as tabelas do banco; mutação manual dos controles) |
+| R30 | Vulnerabilidade em spring-webmvc 6.2.19 sem correção na série 6.2 | 4 | 2 | 8 | Médio | Backend só com `@RestController`, sem visões nem SSE; exceção datada | **Aceito (temporário, até 2026-12-15)** |
+| R31 | Perda dos dados do usuário ao desinstalar | 4 | 3 | 12 | Alto | Dados fora da pasta de instalação | Mitigado (verificado no job do MSI) |
 
 ## Decisões formais de aceitação
 

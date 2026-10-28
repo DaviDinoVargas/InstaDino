@@ -26,7 +26,7 @@ Data: 2026-10-26 · Escopo: importador, persistência local cifrada, backend com
 | V-08 | Baixa | O verificador de segredos acusava o próprio arquivo de autoteste (o CI falharia) | Execução do CI | Arquivo de autoteste excluído da varredura, com teste do verificador | Corrigido |
 | V-09 | Info | Um commit foi feito com a build quebrada (teste de semeadura lia a linha errada) | Revisão do CI | Teste corrigido; regra do processo: nenhum commit sem a suíte do módulo verde | Corrigido |
 | V-10 | Baixa | PRI-01 (dados da exportação não vão ao backend) só era garantido por estrutura de módulos, sem teste | Revisão dos requisitos | `ArquiteturaDePrivacidadeTest` e `ArquiteturaDePrivacidadeServidorTest` inspecionam as classes compiladas; o backend usa `licensing-client` só com `scope=test` | Corrigido |
-| V-11 | **Alta** | **Auditoria de vulnerabilidades de dependências não foi executada** | OSV e NVD inacessíveis pela rede do ambiente; Dependabot desativado no repositório | — | **Aberto** |
+| V-11 | **Alta** | **Auditoria de vulnerabilidades de dependências não foi executada** | OSV e NVD inacessíveis pela rede do ambiente; Dependabot desativado no repositório | Executada na CI (job OSV) na Avaliação 3 | **Fechado** (ver `FINAL_SECURITY_AUDIT.md`, A3-01 e A3-02) |
 
 Nenhum achado crítico ou alto está aberto exceto V-11 (limitação de ambiente, não de código); ele **bloqueia o release** até ser executado (ver 4).
 
