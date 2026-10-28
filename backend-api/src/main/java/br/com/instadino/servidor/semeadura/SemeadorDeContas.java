@@ -96,6 +96,9 @@ class SemeadorDeContas implements ApplicationRunner {
             if (existente.isPresent()) {
                 conta = existente.get();
                 conta.definirHashSenha(codificador.encode(senha), agora);
+                // salvar explicitamente: semear() é chamado de dentro de run(), então @Transactional não se aplica e a alteração
+                // da entidade não seria gravada (o arquivo mostraria uma senha que o servidor não aceita)
+                contas.save(conta);
                 auditoria.sistema("SEMEADURA_SENHA_REDEFINIDA", conta.getId().toString(), d.chave());
             } else {
                 conta = contas.save(new Conta(d.email(), d.email(), d.nome(), codificador.encode(senha), d.papel(), true, agora));

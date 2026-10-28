@@ -62,7 +62,7 @@ No Windows a chave do banco é protegida pela DPAPI e nenhum opt-in é necessár
 scripts/executar-sandbox.sh      # Windows: scripts\executar-sandbox.ps1
 ```
 
-Compila, sobe o backend em `127.0.0.1:8443` com pagamentos em sandbox e abre o desktop apontando para ele. No perfil de desenvolvimento são criadas três contas de demonstração (master, premium, free). As senhas **não estão no repositório**: defina `INSTADINO_SENHA_MASTER`, `INSTADINO_SENHA_PREMIUM` e `INSTADINO_SENHA_FREE` antes da primeira execução, ou consulte o arquivo `contas-semeadas.txt` gerado localmente (ignorado pelo Git). Detalhes em `docs/AUTHENTICATION.md`.
+Compila, sobe o backend em `127.0.0.1:8443` com pagamentos em sandbox e abre o desktop apontando para ele. No perfil de desenvolvimento são criadas três contas de demonstração (master, premium, free). As senhas **não estão no repositório**: defina `INSTADINO_SENHA_MASTER`, `INSTADINO_SENHA_PREMIUM` e `INSTADINO_SENHA_FREE` antes da primeira execução, ou consulte o arquivo `contas-semeadas.txt` gerado localmente (ignorado pelo Git). Para trocar as senhas por novas e aleatórias, use `--redefinir-senhas` (`-RedefinirSenhas` no PowerShell). Detalhes em `docs/AUTHENTICATION.md`.
 
 ## Estrutura
 
