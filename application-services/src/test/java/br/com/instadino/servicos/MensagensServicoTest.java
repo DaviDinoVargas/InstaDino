@@ -145,4 +145,42 @@ class MensagensServicoTest {
         ctx.mensagens().conceder();
         assertThat(ctx.mensagens().temDados()).isFalse();
     }
+
+    @Test
+    void nenhumTextoDeMensagemOuNomeDeMidiaChegaAoBancoEmTabelaNenhuma() {
+        ctx.mensagens().conceder();
+        var c = new ConstrutorDeExportacao().seguidores("ana").seguindo("ana")
+                .arquivo("conta/messages/inbox/a_1/message_1.json", "{\"participants\":[{\"name\":\"Eu\"},{\"name\":\"Ana\"}],\"messages\":["
+                        + "{\"sender_name\":\"Eu\",\"timestamp_ms\":" + JAN + ",\"content\":\"SEGREDO-DA-MENSAGEM-777\",\"photos\":[{\"uri\":\"FOTO-PRIVADA-888.jpg\"}],"
+                        + "\"reactions\":[{\"reaction\":\"REACAO-999\",\"actor\":\"Ana\"}],\"share\":{\"link\":\"https://exemplo.test/LINK-SECRETO-555\"}},"
+                        + "{\"sender_name\":\"Ana\",\"timestamp_ms\":" + (JAN + 1) + ",\"content\":\"OUTRO-SEGREDO-666\"}],\"title\":\"Ana\"}")
+                .arquivo("conta/messages/inbox/b_2/message_1.json", conversa("Bia", "Bia", m("Bia", JAN)));
+        Path zip = c.escreverEm(pasta.resolve("seg.zip"));
+        var r = ctx.importacao().processar(zip, new ConfiguracaoDeImportacao(Set.of(CategoriaDeDados.MENSAGENS)), new Cancelamento(), OuvinteDeProgresso.NENHUM);
+        ctx.importacao().confirmar(r, ctx.sessao().perfilAtivo(), "seg.zip", 1L);
+
+        StringBuilder tudo = new StringBuilder();
+        ctx.banco().emTransacao(conexao -> {
+            try (var tabelas = conexao.createStatement().executeQuery("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")) {
+                java.util.List<String> nomes = new java.util.ArrayList<>();
+                while (tabelas.next()) {
+                    nomes.add(tabelas.getString(1));
+                }
+                for (String nome : nomes) {
+                    try (var linhas = conexao.createStatement().executeQuery("SELECT * FROM \"" + nome + "\"")) {
+                        int colunas = linhas.getMetaData().getColumnCount();
+                        while (linhas.next()) {
+                            for (int k = 1; k <= colunas; k++) {
+                                tudo.append(linhas.getString(k)).append('|');
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        });
+        assertThat(tudo.toString()).contains("Ana").contains("Bia"); // os agregados estão lá
+        assertThat(tudo.toString()).doesNotContain("SEGREDO-DA-MENSAGEM-777").doesNotContain("OUTRO-SEGREDO-666").doesNotContain("FOTO-PRIVADA-888")
+                .doesNotContain("REACAO-999").doesNotContain("LINK-SECRETO-555").doesNotContain("exemplo.test");
+    }
 }
