@@ -2,7 +2,7 @@
 
 Banco SQLite cifrado. Esquema definido por migrações versionadas em `persistence/src/main/resources/db/migracoes/`. Migrações publicadas **nunca são editadas** (o checksum é conferido); mudanças entram como nova versão.
 
-## Versão atual: V004
+## Versão atual: V005
 
 | Tabela | Finalidade | Observações |
 |---|---|---|
@@ -17,7 +17,8 @@ Banco SQLite cifrado. Esquema definido por migrações versionadas em `persisten
 | `anotacao_conta` | Favorito e nota privada (≤ 2000 caracteres) sobre uma conta, por perfil | PK (perfil, usuário); a linha só existe enquanto houver favorito ou nota |
 | `conta_etiqueta` | Etiquetas aplicadas a contas | só aceita etiqueta do mesmo perfil (verificado no repositório e por teste) |
 | `relacionamento` (V003) | Recriada para aceitar os tipos `DEIXEI_DE_SEGUIR_RECENTE`, `SOLICITACAO_RECENTE` e `SOLICITACAO_RECEBIDA` | dados preservados na migração (testado) |
-| `atividade` (V004) | Curtidas, comentários, salvos, pesquisas, visualizações e interações com stories: categoria, subtipo (nome do arquivo), conta, texto (≤ 1000), referência (≤ 500), instante | por importação; `ON DELETE CASCADE`; só é gravada no Premium |
+| `atividade` (V004) | Curtidas, comentários, salvos, pesquisas, visualizações, interações com stories e anúncios/interesses: categoria, subtipo (nome do arquivo), conta, texto (≤ 1000), referência (≤ 500), instante | por importação; `ON DELETE CASCADE`; só é gravada no Premium |
+| `conversa` e `conversa_mes` (V005) | Agregados do módulo de mensagens: título da conversa, participantes, total, enviadas (`-1` se o titular não foi identificado), mídias, datas extremas e totais por mês | **nenhum texto de mensagem**; `ON DELETE CASCADE`; só é gravada no Premium com consentimento; apagada na revogação |
 | `publicacao` e `midia` (V004) | Catálogo de publicações, reels e stories e metadados das mídias (caminho, tipo, tamanho) | **as mídias em si não são copiadas**; ficam no ZIP original |
 | `esquema_migracoes` | Histórico, checksum e data de cada migração | gerida pelo `Migrador` |
 

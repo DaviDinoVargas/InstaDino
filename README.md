@@ -15,10 +15,13 @@ Aplicativo desktop para Windows, escrito em Java, que analisa **localmente** os 
 | Interface JavaFX (tema escuro/claro, navegação, importação guiada, tabelas paginadas) | **Implementado**, testado sob display virtual |
 | Backend comercial (contas, sessões, licença assinada Ed25519, auditoria), tela de Conta/Premium no desktop | **Implementado e testado** (ponta a ponta local; ver `docs/AUTHENTICATION.md` e `docs/LICENSING.md`) |
 | Pagamentos | **Somente sandbox.** Sem provedor real e sem cobrança possível; produção desabilitada (`docs/PAYMENTS.md`) |
-| Gráficos históricos, PDF, etiquetas, favoritos, biblioteca de conteúdo, atividade, mensagens | **Ainda não implementado** |
-| Instalador Windows (`jpackage`), assinatura de código | **Ainda não gerado** (exige Windows) |
+| Gráficos históricos, relatórios PDF (resumo, comparativo, qualidade), etiquetas, favoritos, notas, múltiplos perfis, backup protegido por senha | **Implementado e testado** (Premium) |
+| Biblioteca de conteúdo, análise de atividade (curtidas, comentários, salvos, pesquisas, visualizações), anúncios e interesses, explorador de dados, painéis personalizados | **Implementado e testado com dados sintéticos**; os formatos de atividade, conteúdo e anúncios **ainda não foram conferidos com uma exportação real** |
+| Estatísticas de mensagens (somente contagens e datas, nunca o texto; Premium + consentimento explícito, revogável) | **Implementado e testado com dados sintéticos** |
+| Perfil e segurança da conta, contatos sincronizados, galeria de mídia, busca global, relatório "retrospectiva" | **Não implementados** (ver `docs/ROADMAP.md`) |
+| Execução em Windows (testes, DPAPI, empacotamento `jpackage`, instalador MSI instalar/executar/desinstalar) | **Verificado na CI do GitHub (Windows)**; ainda sem teste manual em Windows limpo e **sem assinatura de código** |
 
-Avaliações de segurança: a **1** (modelo de ameaças) e a **2** (`docs/security/SECURITY_ASSESSMENT_2.md`) estão em `docs/security/`; a **3** (pré-lançamento) será feita na Fase 6. A Avaliação 2 deixa pendências abertas, entre elas a auditoria de vulnerabilidades de dependências.
+Avaliações de segurança: a **1** (modelo de ameaças) e a **2** (`docs/security/SECURITY_ASSESSMENT_2.md`) estão em `docs/security/`; a **3** (pré-lançamento) está em `docs/security/FINAL_SECURITY_AUDIT.md`. A Avaliação 2 deixa pendências abertas, entre elas a auditoria de vulnerabilidades de dependências.
 
 ## Princípios
 
@@ -63,7 +66,7 @@ Compila, sobe o backend em `127.0.0.1:8443` com pagamentos em sandbox e abre o d
 
 ## Estrutura
 
-Ver `docs/ARCHITECTURE.md`. Resumo: `application-core` (domínio e política de acesso), `instagram-importer`, `analytics-engine`, `persistence`, `application-services` (casos de uso), `desktop-app` (JavaFX), `shared-test-fixtures` (dados sintéticos).
+Ver `docs/ARCHITECTURE.md`. Resumo: `application-core` (domínio e política de acesso), `payment-contracts`, `instagram-importer`, `analytics-engine`, `persistence`, `licensing-client`, `backend-api`, `application-services` (casos de uso), `desktop-app` (JavaFX), `shared-test-fixtures` (dados sintéticos). Empacotamento e lançamento: `docs/WINDOWS_BUILD.md` e `docs/RELEASE_PROCESS.md`.
 
 ## Licença
 

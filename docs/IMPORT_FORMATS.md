@@ -2,16 +2,18 @@
 
 > **Ressalva importante.** A estrutura abaixo foi implementada a partir do formato JSON/HTML comumente observado nas exportações do Instagram e validada **apenas com arquivos sintéticos** (`shared-test-fixtures`). Não foi possível testar com uma exportação real, e o Instagram pode alterar nomes de pastas e campos a qualquer momento. Por isso o importador é tolerante: o que não reconhece é inventariado e nunca interpretado. **Antes da primeira release, valide com uma exportação real sua** e ajuste o classificador/parsers se necessário.
 
-## Estado por categoria
+## Estado por categoria (leitor 1.6.0)
 
-| Categoria | Inventário | Registros extraídos nesta versão |
+| Categoria | Inventário | Registros extraídos |
 |---|---|---|
-| Seguidores | sim | **sim** (`followers_N.json` / `.html`) |
-| Contas seguidas | sim | **sim** (`following.json` / `.html`) |
-| Solicitações pendentes, bloqueados, restritos, amigos próximos | sim | **sim** |
-| Outras listas (deixou de seguir recentemente, hashtags, etc.) | sim | não (apenas inventariadas) |
-| Perfil, segurança, mensagens | sim (marcadas como sensíveis) | **não** (planejado, Fase 4, com consentimento) |
-| Publicações, stories, reels, comentários, curtidas, salvos, pesquisas, anúncios | sim | **não** (planejado, Fase 4) |
+| Seguidores, contas seguidas | sim | **sim** (`followers_N`, `following`; JSON e HTML) |
+| Pendentes, bloqueados, restritos, amigos próximos, deixou de seguir recentemente, solicitações recentes e recebidas | sim | **sim** (relacionamentos validados com exportação real) |
+| Outras listas (hashtags seguidas, sugestões removidas) | sim | não |
+| Curtidas, comentários, salvos, pesquisas, visualizações, interações com stories | sim | **sim** (somente JSON; só dados sintéticos) |
+| Publicações, stories, reels | sim | **sim** (metadados; somente JSON; só dados sintéticos) |
+| Anúncios, temas e anunciantes | sim | **sim** (somente JSON; só dados sintéticos) |
+| Mensagens | sim (sensível) | **somente agregados e com autorização** (`message_N.json`; só dados sintéticos) |
+| Perfil e segurança da conta | sim (sensíveis) | **não**: apenas catalogados |
 | Fotos e vídeos | sim (catalogados pelo nome e tamanho declarado, sem descompactar) | não |
 | Arquivos desconhecidos | sim | nunca processados |
 
@@ -34,7 +36,7 @@ HTML: apenas links cujo endereço contém `instagram.com` são considerados; scr
 
 ## Versão do parser
 
-`ImportadorDeExportacao.VERSAO_DO_PARSER` = `1.0.0`, gravada em cada importação.
+`ImportadorDeExportacao.VERSAO_DO_PARSER` = `1.6.0`, gravada em cada importação.
 
 ## O que o programa NÃO afirma
 
@@ -48,7 +50,7 @@ Validação feita pelo responsável do produto, que colou o diagnóstico por arq
 - **`label_values`.** Listas como `blocked_profiles.json` e `close_friends.json` usam `{fbid, label_values:[{label, value}...], media, timestamp}`; os rótulos mudam com o idioma, então o nome de usuário é procurado pelo endereço do perfil e, na falta dele, em rótulos que contenham "user"/"usu".
 - **Registro único na raiz.** `pending_follow_requests.json` é UM registro (`{timestamp, label_values:[...]}`), não uma lista; a raiz é lida como o próprio elemento.
 - `following.json` usa `{title:<usuário>, string_list_data:[{href, timestamp}]}` sem `value`.
-- Arquivos como `follow_requests_you've_received.json`, `recent_follow_requests.json` e `recently_unfollowed_profiles.json` são inventariados como "outras listas de relacionamentos" e ainda **não** são processados.
+- Arquivos como `follow_requests_you've_received.json`, `recent_follow_requests.json` e `recently_unfollowed_profiles.json` foram inicialmente só inventariados; hoje são lidos (ver a tabela acima).
 
 Limitação: estas conclusões vêm de UMA exportação, em português. Outros idiomas e versões do Instagram podem diferir.
 
@@ -61,3 +63,10 @@ Limitação: estas conclusões vêm de UMA exportação, em português. Outros i
 - **Texto corrompido:** exportações JSON gravam UTF-8 como Latin-1 ("ção" vira "Ã§Ã£o"); a correção só é aplicada quando o texto inteiro cabe em Latin-1 e forma UTF-8 válido.
 - **Limites:** 1.000.000 registros de atividade e 200.000 publicações por importação (o excedente é descartado com aviso e a categoria é marcada incompleta). Arquivos HTML dessas categorias não são lidos (aviso para exportar em JSON).
 - **Free:** atividade e conteúdo não são lidos nem guardados; ao assinar é preciso importar de novo.
+
+## Anúncios e mensagens (leitor 1.5.0 e 1.6.0)
+
+**Também validados apenas com dados sintéticos.**
+
+- **Anúncios e interesses:** o nome do tema ou do anunciante é o texto (rótulos como name/nome/topic/advertiser, ou campos planos como `advertiser_name`); só há conta quando existe rótulo de autor. Entram como atividade, portanto são Premium e não participam dos cruzamentos com listas. O caminho de arquivo que contém `ads_information`, `preferences`, `your_topics` ou `inferred_topics` é classificado nesta categoria, o que pode ser largo demais em algumas versões da exportação.
+- **Mensagens:** só `message_N.json` de `messages/`. O leitor percorre o JSON em streaming e guarda por conversa: título, participantes, mensagens por remetente e mês, quantas têm mídia e as datas extremas. O titular é o participante presente em mais conversas que qualquer outro; com uma só conversa não há como saber e "enviadas" fica indisponível. Texto, nomes de arquivos de mídia, reações e links são descartados. O diagnóstico agrega todos os arquivos de mensagens em uma linha e não mostra nomes de pastas, que contêm nomes de usuário.

@@ -1,15 +1,18 @@
 # Estratégia de Testes
 
-Estado real em 2026-10-26: **231 testes automatizados passam** (1 ignorado: DPAPI, que só existe no Windows).
+Estado real em 2026-10-28: **693 testes automatizados** executados, 0 falhas, 1 ignorado (DPAPI, que só existe no Windows; ele roda na CI do Windows).
 
 | Módulo | Testes | O que cobre |
 |---|---|---|
-| application-core | 66 | política Free/Premium (incluindo licença expirada/revogada), identificadores estáveis, normalização de usuários e URLs |
-| persistence | 49 (+1 ignorado) | cifragem real do arquivo, chave errada/ausente, injeção de SQL, migrações (checksum, rollback, banco mais novo), queda real do processo (`Runtime.halt`), concorrência, backup/restauração, exclusão, varredura estática de SQL |
-| instagram-importer | 43 | importação válida, JSON/HTML malformados, ZIPs maliciosos (traversal, absoluto, duplicatas, bomba, truncado, entradas demais), cancelamento, tempo máximo, nada gravado fora do esperado |
-| analytics-engine | 26 | conjuntos, comparação entre importações, CSV (fórmulas, acentos, controle), 200 mil registros |
-| application-services | 18 | fluxo completo com banco cifrado: Free x Premium, histórico persistente, dados preservados sem licença, isolamento entre perfis, exclusão total, 180 mil registros |
-| desktop-app | 29 | navegação, fluxo de importação pela UI, erros legíveis, listas paginadas (50 mil), Free x Premium, tema, redimensionamento; gera capturas em `desktop-app/target/capturas` |
+| application-core | 66 | política Free/Premium (licença expirada/revogada), consentimento de módulos sensíveis, identificadores estáveis, normalização de usuários e URLs |
+| payment-contracts | 34 | contratos, estados e validações dos DTOs comerciais |
+| persistence | 83 (+1 ignorado) | cifragem real do arquivo, chave errada/ausente, injeção de SQL, migrações V001–V005 (checksum, rollback, banco mais novo), queda real do processo, concorrência, backup portátil com senha, exclusão, varredura estática de SQL, repositórios de atividade, conteúdo, anotações e conversas |
+| licensing-client | 45 | validação Ed25519, relógio, cache, adulteração, rotação de chave |
+| backend-api | 104 | autenticação, sessões, autorização (acesso entre contas), licenças, webhooks assinados, idempotência e corrida de eventos, produção de pagamentos desabilitada |
+| instagram-importer | 182 | ZIPs maliciosos, JSON/HTML malformados, limites, relacionamentos (`label_values`, registro único, exportação parcial), atividade, conteúdo, anúncios, mensagens (nunca o texto), diagnóstico sem dados pessoais |
+| analytics-engine | 39 | conjuntos, comparação, CSV (injeção de fórmula, acentos), 200 mil registros |
+| application-services | 67 | fluxo completo com banco cifrado: Free x Premium, histórico, anotações, perfis, relatórios PDF, atividade, conteúdo, mensagens (consentimento, revogação, plano expirado), explorador, painéis, backup |
+| desktop-app | 73 | navegação, importação pela UI (incluindo consentimento de mensagens), erros legíveis, listas paginadas, gráficos, relatórios, Free x Premium, tema; gera capturas em `desktop-app/target/capturas` |
 
 ## Como rodar
 
@@ -24,9 +27,14 @@ mvn -B verify                  # sem display: testes de interface IGNORADOS (nã
 - Nenhum teste usa exportações reais; todos usam dados sintéticos (`shared-test-fixtures`).
 - Nenhum teste faz cobrança ou acessa serviço externo.
 
+## Execução em Windows
+
+O fluxo `.github/workflows/windows.yml` roda a suíte completa em `windows-latest`, gera o app-image e o MSI, prova por um teste de fumaça que o banco fica cifrado e a chave fica protegida por DPAPI, e instala, executa e desinstala o MSI conferindo que os dados do usuário são preservados. O fluxo `ci.yml` roda a suíte no Linux com display virtual e a varredura de segredos.
+
 ## Lacunas conhecidas
 
-- Sem execução em Windows real (DPAPI, instalador, caminhos).
+- Sem teste manual em um Windows limpo (máquina virtual sem JDK) e sem teste de **atualização** do MSI entre versões.
+- Atividade, conteúdo, anúncios e mensagens foram validados **apenas com exportações sintéticas**; os relacionamentos foram conferidos com uma exportação real (ver `IMPORT_FORMATS.md`).
 - Sem *fuzzing* contínuo do importador.
-- Sem testes de autenticação, licenciamento e pagamentos: esses módulos ainda não existem.
-- Cobertura medida com JaCoCo (relatório em `target/site/jacoco`), sem meta numérica aplicada ainda.
+- Pagamentos testados somente em sandbox; nenhum provedor real foi integrado.
+- Cobertura medida com JaCoCo (relatório em `target/site/jacoco`), sem meta numérica aplicada.

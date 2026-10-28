@@ -27,15 +27,15 @@ Regra central: **os dados da exportação nunca atravessam a seta HTTPS.** O cli
 |---|---|---|---|
 | `payment-contracts` | DTOs e contratos comerciais compartilhados (planos, licença, eventos, `ProvedorPagamento`) | — | **implementado** |
 | `application-core` | Modelos de domínio (`NomeDeUsuario`, `Relacionamento`), catálogo de funcionalidades, política Free/Premium | — | **implementado** |
-| `instagram-importer` | Validação e inventário do ZIP, parsers, normalização | `application-core` | **implementado** (relacionamentos) |
-| `analytics-engine` | Comparação de conjuntos, indicadores sociais, CSV | `application-core` | **implementado** (sem PDF e gráficos) |
+| `instagram-importer` | Validação e inventário do ZIP, parsers (relacionamentos, atividade, conteúdo, anúncios, mensagens agregadas), diagnóstico | `application-core` | **implementado** |
+| `analytics-engine` | Comparação de conjuntos, indicadores sociais, CSV | `application-core` | **implementado** |
 | `persistence` | SQLite cifrado, migrações, repositórios, proteção de chave | `application-core` | **implementado** |
 | `application-services` | Casos de uso que combinam importador, análise, persistência e política | todos os acima | **implementado** (ver nota) |
 | `shared-test-fixtures` | Exportações sintéticas e ZIPs maliciosos (somente teste) | — | **implementado** |
 | `licensing-client` | Validação de licença assinada, cache seguro, cliente da API | `application-core`, `payment-contracts`, `persistence` (apenas a interface de proteção de segredos) | **implementado** |
 | `backend-api` | Autenticação, sessões, licenças, pagamentos, auditoria (domínio e persistência em pacotes internos) | `payment-contracts` (usa `licensing-client` só em testes) | **implementado** (pagamentos apenas em sandbox) |
 | `desktop-app` | JavaFX, navegação, telas, composição | todos os módulos do cliente | **implementado** |
-| `packaging` | `jpackage`, instalador, assinatura | `desktop-app` | planejado |
+| `packaging` | `jpackage`, instalador | `desktop-app` | **implementado como scripts** em `scripts/` e fluxo de CI (`docs/WINDOWS_BUILD.md`); assinatura de código **pendente** |
 
 **Nota sobre `application-services`:** os casos de uso ficam em módulo próprio, e não em `application-core`, porque dependem do importador, do motor de análise e da persistência, que por sua vez dependem de `application-core`; colocá-los lá criaria dependência circular.
 
@@ -59,19 +59,25 @@ Detalhes em `docs/adr/`.
 
 ## 4. Fluxos principais
 
-### Importação (planejado)
+Todos os fluxos abaixo estão **implementados**; o pagamento só em sandbox.
+
+### Importação
 1. Selecionar ZIP → validar tamanho/estrutura → inventário (sem extrair para disco) → confirmação de categorias sensíveis → parsing em área controlada → normalização/validação → resumo → persistência transacional.
 
-### Controle de acesso (planejado)
+### Controle de acesso
 - `CatalogoFuncionalidades` define ids estáveis (`SEGUIDORES_BASICO`, `HISTORICO_COMPLETO`, …).
 - `PoliticaDeAcesso` decide por `EstadoDeLicenca` validado criptograficamente. A UI apenas reflete; os casos de uso reaplicam a política.
 
-### Licença (planejado)
+### Licença
 - Servidor emite `{payload, assinatura, kid}`; cliente valida e guarda em cache protegido; ausência de servidor mantém o último estado válido até o fim da tolerância.
 
-### Pagamento (planejado)
-- Desktop pede checkout ao backend → backend cria sessão no provedor → usuário paga na página hospedada → provedor envia webhook assinado → backend valida, aplica idempotência e ordem → ativa licença → desktop consulta o backend.
+### Pagamento
+- (sandbox) Desktop pede checkout ao backend → backend cria sessão no provedor → usuário paga na página hospedada → provedor envia webhook assinado → backend valida, aplica idempotência e ordem → ativa licença → desktop consulta o backend.
 
 ## 5. Observabilidade e erros
 
 Logs estruturados sem dados pessoais nem segredos. Mensagens da UI são genéricas; códigos de erro internos permitem diagnóstico sem expor detalhes.
+
+## 6. Módulos sensíveis e consentimento
+
+Mensagens são o único módulo sensível processado. Exige plano Premium e consentimento explícito (`RepositorioDeConsentimentos`), pedido no passo de inventário da importação, desligado por padrão. O importador devolve só agregados por conversa e por mês (`ResumoDeConversa`); o texto nunca chega ao resultado, ao diagnóstico ou ao banco (migração V005 não tem coluna de texto de mensagem). Revogar o consentimento apaga os agregados e é sempre permitido, mesmo após o plano expirar. Perfil e segurança da conta continuam apenas catalogados.
