@@ -1,6 +1,6 @@
 # Modelo Freemium — estado da implementação
 
-A decisão de acesso é centralizada em `PoliticaDeAcesso` (módulo `application-core`) e **reaplicada nos casos de uso** (`application-services`); a interface apenas reflete. O plano Premium só é concedido por um `EstadoDaLicenca` validado criptograficamente (assinatura Ed25519 do servidor, **ainda não implementada**: ver `LICENSING.md` quando existir). Hoje, sem o cliente de licenciamento, o aplicativo usa o plano Free por padrão.
+A decisão de acesso é centralizada em `PoliticaDeAcesso` (módulo `application-core`) e **reaplicada nos casos de uso** (`application-services`); a interface apenas reflete. O plano Premium só é concedido por um `EstadoDaLicenca` validado criptograficamente (assinatura Ed25519 do servidor; ver `LICENSING.md`). Sem licença válida, o aplicativo usa o plano Free.
 
 ## Matriz (implementado e testado)
 
@@ -24,9 +24,13 @@ A decisão de acesso é centralizada em `PoliticaDeAcesso` (módulo `application
 | Relatório comparativo | `relatorios.comparativos` | Premium | `ServicoDeRelatorios.gerarRelatorioComparativo` |
 | Biblioteca de conteúdo | `conteudo.biblioteca` | Premium | `ServicoDeConteudo`; guarda só metadados; no Free o conteúdo nem é lido na importação |
 | Análise de atividade | `atividade.analise` | Premium | `ServicoDeAtividade`; só contagens e datas dos registros, nunca intenção; no Free a atividade nem é lida na importação |
+| Anúncios e interesses | `atividade.analise` | Premium | aba em `ServicoDeAtividade.interesses`; lido junto com a atividade; não entra nos cruzamentos |
+| Explorador de dados | `dados.explorador` | Premium | `ServicoDeExplorador`; só totais gravados na importação |
+| Painéis personalizados | `paineis.personalizados` | Premium | `ServicoDePaineis`; sem Premium o painel volta ao completo |
+| Estatísticas de mensagens | `mensagens.arquivo` | Premium **+ consentimento** | `ServicoDeMensagens`; só contagens e datas; **revogar e apagar nunca exige plano** |
 | Backup protegido por senha | `backup.protegido` | Premium | `ServicoDeDados.criarBackup`; **restaurar nunca exige plano** |
 
-Os demais itens do catálogo (`Funcionalidade`) existem para a política, mas **ainda não têm implementação**: explorador, painéis personalizados e arquivo de mensagens.
+Todos os itens do catálogo (`Funcionalidade`) têm implementação. Perfil e segurança da conta, contatos sincronizados e galeria de mídia **não** estão no catálogo porque não foram implementados.
 
 ## Regras verificadas por teste
 

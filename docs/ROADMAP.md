@@ -1,18 +1,22 @@
 # Roteiro de funcionalidades propostas
 
-Origem: sugestões do responsável pelo produto após testar o aplicativo com uma exportação real (2026-10-26). **Nada abaixo está implementado.** A ordem respeita a regra do projeto: não construir nada por cima de um importador que não foi validado com dados reais.
+Origem: sugestões do responsável pelo produto após testar o aplicativo com uma exportação real (2026-10-26). Estado em 2026-10-28.
 
-| # | Proposta | Plano | Observações de privacidade e viabilidade |
-|---|---|---|---|
-| 1 | **Validar o importador com a exportação real** | — | **Primeiro passo e bloqueante.** Em andamento: diagnóstico por arquivo na tela de importação (ver `IMPORT_FORMATS.md`). |
-| 2 | Não recíprocos com contexto (cruzar com curtidas, buscas, conversas) | Free/Premium | Depende dos parsers de atividade (Fase 4c). Só contagens; nunca inferir intenção. |
-| 3 | Ranking de interação (curtidas, story_interactions, comentários) | Premium | Texto do tipo "curtiu N vezes", sem interpretar motivos. |
-| 4 | Buscados e não seguidos (e o inverso) | Premium | Cruza `profile_searches` com as listas. |
-| 5 | "Deixou de seguir" com origem declarada (`recently_unfollowed_profiles`) | Free/Premium | Coerente com a regra do produto **se** a tela disser que é um registro do próprio Instagram e cobre só um período recente. |
-| 6 | Linha do tempo e mapa de calor de atividade | Premium | Só dados que já têm data. |
-| 7 | "O que o Instagram sabe sobre mim" (anúncios, tópicos, logins) | Free | Alinhado ao discurso de privacidade. Alerta de login inesperado exige cuidado para não afirmar além do que o arquivo prova. |
-| 8 | Auditoria de contatos sincronizados | Premium, **sensível** | Dados de **terceiros** (telefone/e-mail). Só com consentimento explícito, somente leitura local, nunca em relatórios. Maior risco de privacidade do conjunto. |
-| 9 | Estatísticas de mensagens (contagens, nunca texto) | Premium, consentimento | Módulo de mensagens já previsto na Fase 4d; começar só com contagens e datas. |
-| 10 | Galeria local de mídia | Premium | HEIC exige biblioteca de decodificação: afeta `THIRD_PARTY.md` e a auditoria de dependências (ainda pendente). O ZIP original precisa continuar disponível para ler as mídias. |
-| 11 | Ficha do perfil (busca global) | Free | Costura as demais funções; fica por último. |
-| 12 | Relatório "retrospectiva" em PDF | Premium | Reaproveita `DocumentoPdf`; depende dos dados dos itens 3 a 6. |
+Legenda: **Feito** = implementado e testado com dados sintéticos; **Validado** = conferido com a exportação real do responsável; **Não feito** = fora desta versão, com o motivo.
+
+| # | Proposta | Plano | Estado | Observações |
+|---|---|---|---|---|
+| 1 | Validar o importador com a exportação real | — | **Validado** (relacionamentos) | O responsável confirmou que a importação passou a bater. Atividade, conteúdo, anúncios e mensagens **não** foram conferidos com dados reais. |
+| 2 | Não recíprocos com contexto | Premium | **Feito** | Aba Cruzamentos da tela Atividade: mostra contas não recíprocas com e sem interação registrada; não infere intenção. |
+| 3 | Ranking de interação | Premium | **Feito** | Aba Ranking (curtidas, comentários, interações com stories). |
+| 4 | Buscados e não seguidos | Premium | **Feito** | Cruzamento das pesquisas de perfil com as listas. |
+| 5 | "Deixou de seguir" com origem declarada | Free | **Feito** | Lista do próprio Instagram (`recently_unfollowed_profiles`), coberta por aviso de que cobre só um período recente. |
+| 6 | Linha do tempo e mapa de calor | Premium | **Feito** | Resumo por mês e mapa de calor por dia da semana e hora (fuso do computador). |
+| 7 | "O que o Instagram sabe sobre mim" | Premium | **Parcial** | Feito: temas, anunciantes e anúncios (aba Anúncios e interesses), lidos de forma independente de rótulos. **Não feito:** histórico de logins e alertas de segurança, porque exigem tratar IPs e não afirmar além do que o arquivo prova. A decisão de plano mudou de Free para Premium por usar a mesma leitura de atividade, que o Free não lê. |
+| 8 | Auditoria de contatos sincronizados | Premium, sensível | **Não feito** | Dados de terceiros (telefone/e-mail). Sem exportação real para validar o formato, optou-se por não construir um leitor às cegas para o dado de maior risco. |
+| 9 | Estatísticas de mensagens | Premium + consentimento | **Feito** | Somente contagens e datas; consentimento explícito, desligado por padrão, revogável com apagamento. |
+| 10 | Galeria local de mídia | Premium | **Não feito** | HEIC exige biblioteca de decodificação (nova dependência, a auditoria de dependências já está pendente) e o ZIP original precisaria continuar disponível. O catálogo de mídias (caminho, tipo, tamanho) existe na Biblioteca. |
+| 11 | Ficha do perfil (busca global) | Free | **Não feito** | Há busca de contas nas listas e anotações por conta; a ficha unificada ficou fora. |
+| 12 | Relatório "retrospectiva" em PDF | Premium | **Não feito** | Existem relatórios de resumo, comparativo e de qualidade com a base `DocumentoPdf`; a retrospectiva específica não foi desenhada. |
+
+Também entregues além da lista: etiquetas, favoritos, notas, múltiplos perfis, backup protegido por senha, explorador de dados e painéis personalizados.
