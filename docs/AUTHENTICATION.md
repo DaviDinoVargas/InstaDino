@@ -42,6 +42,8 @@ No perfil `desenvolvimento` o servidor cria três contas se ainda não existirem
 
 As senhas **não estão no repositório**. Vêm de `INSTADINO_SENHA_MASTER`, `INSTADINO_SENHA_PREMIUM` e `INSTADINO_SENHA_FREE`; se ausentes, são geradas aleatoriamente (20 caracteres) e gravadas em `contas-semeadas.txt` (permissão 0600, ignorado pelo Git). Nunca são registradas em log. A semeadura é desabilitada no perfil `producao`.
 
+**Rotação.** Se uma senha de demonstração foi divulgada, rode `scripts/executar-sandbox.sh --redefinir-senhas` (Windows: `scripts\executar-sandbox.ps1 -RedefinirSenhas`) com `INSTADINO_SENHA_*` não definidas: as três contas recebem senhas novas e aleatórias, gravadas só em `dados-backend/contas-semeadas.txt`. Quem opera o produto nunca precisa ver essas senhas fora da própria máquina; elas não devem ser coladas em chat, issue, commit ou log.
+
 ## Limites conhecidos
 
 - O limitador de taxa fica em memória: com mais de uma instância do backend cada uma conta separadamente (ver `RISK_REGISTER.md`).
