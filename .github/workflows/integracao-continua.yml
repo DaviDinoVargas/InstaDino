@@ -82,7 +82,7 @@ jobs:
       - name: Consultar o banco de vulnerabilidades (OSV)
         run: ./osv-scanner --format json --output osv.json --sbom target/bom.json || test $? -eq 1
       - name: Resumir e falhar se houver vulnerabilidade conhecida
-        run: python3 scripts/resumir-osv.py osv.json
+        run: python3 scripts/resumir-osv.py osv.json config/osv-excecoes.json
       - name: Publicar resultado bruto
         if: always()
         uses: actions/upload-artifact@v4
